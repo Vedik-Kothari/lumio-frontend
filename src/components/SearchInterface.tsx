@@ -6,6 +6,8 @@ import {
   BookOpenText,
   BrainCircuit,
   CheckCircle2,
+  Check,
+  ChevronDown,
   ChevronRight,
   Clock3,
   FileOutput,
@@ -108,21 +110,33 @@ function buildId(prefix: string) {
 }
 
 function renderRichText(content: string) {
-  const blocks = content.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+  const sanitized = content
+    .replace(/\r/g, "")
+    .split("\n")
+    .filter((line) => !/^\s*[-_=~]{3,}\s*$/.test(line))
+    .join("\n");
+
+  const blocks = sanitized.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
   if (blocks.length === 0) {
     return <p className="text-base leading-8 text-[var(--muted-foreground)]">No content generated yet.</p>;
   }
 
   return blocks.map((block, index) => {
     const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
-    const firstLine = lines[0] ?? "";
+    const firstLine = (lines[0] ?? "").replace(/\*\*/g, "");
     const bullets = lines.filter((line) => /^[-*]\s/.test(line));
+    const isAllCapsHeading =
+      firstLine.length > 0 &&
+      firstLine.length < 120 &&
+      /[A-Z]/.test(firstLine) &&
+      firstLine === firstLine.toUpperCase();
 
-    if (/^#{1,3}\s/.test(firstLine)) {
+    if (/^#{1,3}\s/.test(firstLine) || isAllCapsHeading) {
+      const heading = /^#{1,3}\s/.test(firstLine) ? firstLine.replace(/^#{1,3}\s/, "") : firstLine;
       return (
-        <div key={index} className="space-y-4">
-          <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--foreground)]">{firstLine.replace(/^#{1,3}\s/, "")}</h3>
-          {lines.slice(1).length > 0 && <p className="text-base leading-8 text-[var(--foreground)]/86 whitespace-pre-wrap">{lines.slice(1).join("\n")}</p>}
+        <div key={index} className="space-y-3">
+          <h3 className="text-[1.55rem] font-semibold tracking-[-0.035em] text-[var(--foreground)]">{heading}</h3>
+          {lines.slice(1).length > 0 && <p className="text-[16px] leading-8 text-[var(--foreground)]/88 whitespace-pre-wrap">{lines.slice(1).join("\n")}</p>}
         </div>
       );
     }
@@ -131,11 +145,11 @@ function renderRichText(content: string) {
       const title = bullets.length === lines.length ? "" : firstLine.replace(/\*\*/g, "").replace(/:$/, "");
       const items = bullets.length > 0 ? bullets : lines.slice(1);
       return (
-        <div key={index} className="rounded-[26px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-5 md:px-6 md:py-6">
-          {title && <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">{title}</h3>}
+        <div key={index} className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)]/75 px-5 py-5 md:px-6 md:py-6">
+          {title && <h3 className="text-[13px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">{title}</h3>}
           <ul className={`${title ? "mt-4" : ""} space-y-4`}>
             {items.map((line, lineIndex) => (
-              <li key={lineIndex} className="flex gap-3 text-base leading-8 text-[var(--foreground)]/86">
+              <li key={lineIndex} className="flex gap-3 text-[16px] leading-8 text-[var(--foreground)]/88">
                 <ChevronRight className="mt-1.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
                 <span>{line.replace(/^[-*]\s/, "")}</span>
               </li>
@@ -145,7 +159,7 @@ function renderRichText(content: string) {
       );
     }
 
-    return <p key={index} className="text-base leading-8 text-[var(--foreground)]/86 whitespace-pre-wrap">{block}</p>;
+    return <p key={index} className="text-[16px] leading-8 text-[var(--foreground)]/88 whitespace-pre-wrap">{block}</p>;
   });
 }
 
@@ -183,6 +197,7 @@ export default function SearchInterface({
   const [selectedVideoId, setSelectedVideoId] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
+  const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"txt" | "md" | "json" | "html">("md");
   const [exportStatus, setExportStatus] = useState("");
 
@@ -273,6 +288,12 @@ export default function SearchInterface({
       setSelectedVideoId(libraryVideos[0].video_id);
     }
   }, [libraryVideos, scopeMode, selectedVideoId]);
+
+  useEffect(() => {
+    if (scopeMode !== "specific") {
+      setVideoPickerOpen(false);
+    }
+  }, [scopeMode]);
 
   const contextLabel =
     scopeMode === "library"
@@ -517,10 +538,52 @@ export default function SearchInterface({
               ))}
             </div>
             {scopeMode === "specific" && (
-              <select value={selectedVideoId} onChange={(event) => setSelectedVideoId(event.target.value)} className="mt-4 w-full rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] outline-none">
-                {libraryVideos.length === 0 && <option value="">No indexed videos yet</option>}
-                {libraryVideos.map((video) => <option key={video.video_id} value={video.video_id}>{video.title}</option>)}
-              </select>
+              <div className="relative mt-4">
+                <button
+                  type="button"
+                  onClick={() => setVideoPickerOpen((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-left"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Selected video</div>
+                    <div className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">
+                      {selectedVideo?.title || "Choose from indexed videos"}
+                    </div>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform ${videoPickerOpen ? "rotate-180" : ""}`} />
+                </button>
+                {videoPickerOpen && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 max-h-72 overflow-y-auto rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-solid)] p-2 shadow-[var(--shadow-strong)]">
+                    {libraryVideos.length === 0 && (
+                      <div className="rounded-[18px] px-4 py-3 text-sm text-[var(--muted-foreground)]">No indexed videos yet</div>
+                    )}
+                    {libraryVideos.map((video) => {
+                      const active = video.video_id === selectedVideoId;
+                      return (
+                        <button
+                          key={video.video_id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVideoId(video.video_id);
+                            setVideoPickerOpen(false);
+                          }}
+                          className={`flex w-full items-start justify-between gap-3 rounded-[18px] px-4 py-3 text-left ${
+                            active ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "text-[var(--foreground)] hover:bg-[var(--surface-elevated)]"
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium">{video.title}</div>
+                            <div className="mt-1 text-[12px] text-[var(--muted-foreground)]">
+                              {video.channel || video.source_type}
+                            </div>
+                          </div>
+                          {active && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--primary)]" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
             <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3">
               <div className="text-[13px] text-[var(--muted-foreground)]">{contextLabel}</div>
@@ -709,9 +772,9 @@ export default function SearchInterface({
                           <div className="mt-3 line-clamp-6 whitespace-pre-wrap text-[16px] font-medium leading-8 text-[var(--foreground)]/92">{message.content}</div>
                           {message.sources && message.sources.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
-                              {message.sources.slice(0, 3).map((source) => (
+                              {message.sources.slice(0, 3).map((source, index) => (
                                 <span
-                                  key={`${message.id}-${source.video_id}-${source.timestamp}`}
+                                  key={`${message.id}-${source.video_id}-${source.timestamp}-${index}`}
                                   className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]"
                                 >
                                   <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
@@ -758,15 +821,15 @@ export default function SearchInterface({
         </div>
  
         <aside className={`glass-card rounded-[32px] p-5 md:p-6 ${isSearching ? "thinking-shimmer" : ""}`}>
-          <div className="flex items-center justify-between gap-3">
+          <div className="space-y-4">
             <div>
               <div className="workspace-label">Output studio</div>
-              <div className="workspace-heading mt-3">Read the answer, inspect the evidence, then jump into playback.</div>
-              <div className="workspace-subtle mt-3">
-                Inspect the answer, trace evidence, and jump directly into the player.
+              <div className="workspace-heading mt-3">Answer, evidence, and playback in one readable view.</div>
+              <div className="workspace-subtle mt-2">
+                Keep the answer easy to read, then open evidence or jump into the player when you need proof.
               </div>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="grid grid-cols-3 gap-2 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1">
               {[
                 { id: "answer", label: "Answer" },
                 { id: "evidence", label: "Evidence" },
@@ -776,10 +839,10 @@ export default function SearchInterface({
                   key={tab.id}
                   type="button"
                   onClick={() => setResultTab(tab.id as "answer" | "evidence" | "player")}
-                  className={`rounded-full px-3 py-2 text-[13px] ${
+                  className={`rounded-[14px] px-3 py-2 text-[13px] font-medium ${
                     resultTab === tab.id
-                      ? "bg-[var(--surface-brand)] text-[var(--foreground)]"
-                      : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"
+                      ? "bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
+                      : "text-[var(--muted-foreground)]"
                   }`}
                 >
                   {tab.label}
@@ -849,34 +912,53 @@ export default function SearchInterface({
                         <div className="mt-3 text-[13px] text-[var(--muted-foreground)]">{exportStatus}</div>
                       )}
                     </div>
-                    <div className="workspace-panel rounded-[28px] px-5 py-5">
-                      <div className="workspace-label">
-                        {activeMessage.title || "Grounded answer"}
+                    {activeMessage.sources && activeMessage.sources.length > 0 && (
+                      <div className="workspace-panel rounded-[24px] px-4 py-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="workspace-label">Jump points</div>
+                            <div className="mt-2 text-sm text-[var(--muted-foreground)]">Open the most relevant moments without leaving the answer.</div>
+                          </div>
+                          <div className="text-[12px] font-medium text-[var(--muted-foreground)]">{activeMessage.sources.length} citations</div>
+                        </div>
+                        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                          {activeMessage.sources.slice(0, 8).map((source, index) => (
+                            <button
+                              key={`${activeMessage.id}-${source.video_id}-${source.timestamp}-${index}`}
+                              type="button"
+                              onClick={() => {
+                                setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
+                                setResultTab("player");
+                              }}
+                              className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                            >
+                              <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
+                              {source.timestamp}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="mt-4 border-l border-[var(--primary-soft)] pl-5">
-                        <div className="workbench-prose space-y-6">
+                    )}
+                    <div className="workspace-panel rounded-[28px] px-5 py-5">
+                      <div className="flex items-start justify-between gap-4 border-b border-[var(--panel-border)] pb-4">
+                        <div>
+                          <div className="workspace-label">{activeMessage.title || "Grounded answer"}</div>
+                          <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Readable answer canvas</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setResultTab("evidence")}
+                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] font-medium text-[var(--foreground)]"
+                        >
+                          Open evidence
+                        </button>
+                      </div>
+                      <div className="answer-scroll mt-5 pr-2">
+                        <div className="workbench-prose border-l border-[var(--primary-soft)] pl-5">
                           {renderRichText(activeMessage.content)}
                         </div>
                       </div>
                     </div>
-                    {activeMessage.sources && activeMessage.sources.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pb-1">
-                        {activeMessage.sources.slice(0, 6).map((source) => (
-                          <button
-                            key={`${source.video_id}-${source.timestamp}`}
-                            type="button"
-                            onClick={() => {
-                              setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
-                              setResultTab("player");
-                            }}
-                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
-                          >
-                            <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
-                            {source.timestamp}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
