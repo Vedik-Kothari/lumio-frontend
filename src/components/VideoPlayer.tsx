@@ -30,16 +30,19 @@ export default function VideoPlayer({ videoId, timestamp }: { videoId: string; t
   }, [timestamp, isVideoLoaded]);
 
   return (
-    <div className="glass-card overflow-hidden relative aspect-video flex items-center justify-center shadow-[0_0_40px_rgba(0,212,255,0.1)]">
-      {/* Neon border effect */}
-      <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{
-        background: "linear-gradient(135deg, rgba(0,212,255,0.1) 0%, transparent 50%, rgba(124,58,237,0.1) 100%)"
-      }} />
+    <div className="glass-card relative flex aspect-video items-center justify-center overflow-hidden rounded-[28px]">
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[28px]"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(85,194,255,0.12) 0%, transparent 48%, rgba(255,147,82,0.1) 100%)",
+        }}
+      />
 
       {!isVideoLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10">
-          <Loader2 className="animate-spin text-[#00d4ff] mb-3" size={28} />
-          <span className="text-xs font-mono text-[#8b949e]">Loading video stream...</span>
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60">
+          <Loader2 className="mb-3 animate-spin text-[var(--primary)]" size={28} />
+          <span className="text-xs font-mono text-[var(--muted-foreground)]">Loading video stream...</span>
         </div>
       )}
 

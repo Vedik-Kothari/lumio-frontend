@@ -1,8 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Loader2, Sparkles, PlayCircle, Image as ImageIcon, Zap } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
+import {
+  BookOpenText,
+  BrainCircuit,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  FileOutput,
+  Filter,
+  FolderSearch,
+  GitCompareArrows,
+  Download,
+  Image as ImageIcon,
+  LayoutGrid,
+  Layers3,
+  LibraryBig,
+  Loader2,
+  Map,
+  MessageSquareText,
+  PlayCircle,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  WandSparkles,
+  Waves,
+  X,
+  Zap,
+} from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -19,34 +46,296 @@ interface SearchResponse {
   sources: SourceChunk[];
 }
 
-export default function SearchInterface() {
+interface WorkbenchResponse {
+  title: string;
+  content: string;
+  sources: SourceChunk[];
+  mode: string;
+}
+
+interface ProcessingState {
+  status: string;
+  percent: number;
+  is_complete?: boolean;
+  search_quality?: string;
+}
+
+interface LibraryVideo {
+  video_id: string;
+  title: string;
+  source_type: string;
+  status: string;
+  search_quality: string;
+  is_complete: boolean;
+  channel?: string;
+  duration_seconds?: number;
+  thumbnail_url?: string;
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  title?: string;
+  mode?: string;
+  sources?: SourceChunk[];
+  pending?: boolean;
+}
+
+const workbenchModes = [
+  { id: "save_time", label: "Save Time", icon: Zap, prompt: "Tell me whether this video is worth watching fully and which sections to skip." },
+  { id: "moment_map", label: "Moment Map", icon: Map, prompt: "Map the most important moments, pivots, and takeaways in order." },
+  { id: "ask_for_me", label: "Ask for Me", icon: WandSparkles, prompt: "Extract the exact actions, tools, and metrics I should care about." },
+  { id: "output_generator", label: "Output", icon: FileOutput, prompt: "Turn this into a polished reusable deliverable." },
+  { id: "cross_video_memory", label: "Cross-Video", icon: LibraryBig, prompt: "Compare themes and contradictions across the chosen videos." },
+  { id: "learning_mode", label: "Learning", icon: BookOpenText, prompt: "Teach me this video with a structured learning breakdown." },
+  { id: "decision_mode", label: "Decision", icon: ShieldCheck, prompt: "Separate facts, claims, risks, and recommended actions." },
+  { id: "resource_extractor", label: "Resources", icon: FolderSearch, prompt: "List all resources, people, tools, and references mentioned." },
+  { id: "what_changed", label: "What Changed", icon: GitCompareArrows, prompt: "Show what changed over the video timeline and why it matters." },
+  { id: "presentation_mode", label: "Executive", icon: BrainCircuit, prompt: "Summarize this for an executive or client-facing audience." },
+];
+
+function formatDuration(seconds?: number) {
+  if (!seconds) return "Unknown";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function buildId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function renderRichText(content: string) {
+  const blocks = content.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+  if (blocks.length === 0) {
+    return <p className="text-base leading-8 text-[var(--muted-foreground)]">No content generated yet.</p>;
+  }
+
+  return blocks.map((block, index) => {
+    const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+    const firstLine = lines[0] ?? "";
+    const bullets = lines.filter((line) => /^[-*]\s/.test(line));
+
+    if (/^#{1,3}\s/.test(firstLine)) {
+      return (
+        <div key={index} className="space-y-4">
+          <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--foreground)]">{firstLine.replace(/^#{1,3}\s/, "")}</h3>
+          {lines.slice(1).length > 0 && <p className="text-base leading-8 text-[var(--foreground)]/86 whitespace-pre-wrap">{lines.slice(1).join("\n")}</p>}
+        </div>
+      );
+    }
+
+    if (/^\*\*.*\*\*$/.test(firstLine) || /:$/.test(firstLine) || bullets.length === lines.length) {
+      const title = bullets.length === lines.length ? "" : firstLine.replace(/\*\*/g, "").replace(/:$/, "");
+      const items = bullets.length > 0 ? bullets : lines.slice(1);
+      return (
+        <div key={index} className="rounded-[26px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-5 md:px-6 md:py-6">
+          {title && <h3 className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">{title}</h3>}
+          <ul className={`${title ? "mt-4" : ""} space-y-4`}>
+            {items.map((line, lineIndex) => (
+              <li key={lineIndex} className="flex gap-3 text-base leading-8 text-[var(--foreground)]/86">
+                <ChevronRight className="mt-1.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <span>{line.replace(/^[-*]\s/, "")}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    return <p key={index} className="text-base leading-8 text-[var(--foreground)]/86 whitespace-pre-wrap">{block}</p>;
+  });
+}
+
+function ThinkingBubble() {
+  return (
+    <div className="flex items-center gap-3 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3">
+      <div className="flex gap-1">
+        <motion.span className="h-2 w-2 rounded-full bg-[var(--primary)]" animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0 }} />
+        <motion.span className="h-2 w-2 rounded-full bg-[var(--primary)]" animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0.12 }} />
+        <motion.span className="h-2 w-2 rounded-full bg-[var(--primary)]" animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0.24 }} />
+      </div>
+      <div className="text-sm text-[var(--muted-foreground)]">Lumio is grounding the reply in transcript and visual evidence.</div>
+    </div>
+  );
+}
+
+export default function SearchInterface({
+  initialTaskTab = "workbench",
+}: {
+  initialTaskTab?: "search" | "workbench" | "library";
+}) {
+  const [taskTab, setTaskTab] = useState<"search" | "workbench" | "library">(initialTaskTab);
+  const [resultTab, setResultTab] = useState<"answer" | "evidence" | "player">("answer");
   const [query, setQuery] = useState("");
+  const [activeMode, setActiveMode] = useState("save_time");
+  const [outputFormat, setOutputFormat] = useState("Executive brief");
+  const [scopeMode, setScopeMode] = useState<"current" | "specific" | "library">("current");
+  const [libraryFilter, setLibraryFilter] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [playingVideo, setPlayingVideo] = useState<{ videoId: string; timestamp: string } | null>(null);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
+  const [libraryVideos, setLibraryVideos] = useState<LibraryVideo[]>([]);
+  const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"txt" | "md" | "json" | "html">("md");
+  const [exportStatus, setExportStatus] = useState("");
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  const activeModeConfig = useMemo(() => workbenchModes.find((mode) => mode.id === activeMode) ?? workbenchModes[0], [activeMode]);
+  const ActiveToolIcon = activeModeConfig.icon;
+  const deferredLibraryFilter = useDeferredValue(libraryFilter);
+  const selectedVideo = libraryVideos.find((video) => video.video_id === selectedVideoId) || null;
+  const resolvedVideoId = scopeMode === "current" ? currentVideoId : scopeMode === "specific" ? selectedVideoId || null : null;
+  const assistantMessages = messages.filter((message) => message.role === "assistant" && !message.pending);
+  const activeMessage = assistantMessages.find((message) => message.id === selectedMessageId) ?? assistantMessages[assistantMessages.length - 1] ?? null;
+  const visibleVideos = useMemo(() => {
+    const normalized = deferredLibraryFilter.trim().toLowerCase();
+    if (!normalized) return libraryVideos;
+    return libraryVideos.filter((video) => `${video.title} ${video.channel ?? ""} ${video.source_type}`.toLowerCase().includes(normalized));
+  }, [deferredLibraryFilter, libraryVideos]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncCurrentVideo = () => setCurrentVideoId(localStorage.getItem("current_video_id"));
+    const handleVideoSelected = (event: Event) => {
+      const customEvent = event as CustomEvent<{ videoId?: string }>;
+      const videoId = customEvent.detail?.videoId ?? localStorage.getItem("current_video_id");
+      setCurrentVideoId(videoId);
+      setTaskTab("workbench");
+      setScopeMode("current");
+    };
+    syncCurrentVideo();
+    window.addEventListener("video-selected", handleVideoSelected as EventListener);
+    window.addEventListener("storage", syncCurrentVideo);
+    return () => {
+      window.removeEventListener("video-selected", handleVideoSelected as EventListener);
+      window.removeEventListener("storage", syncCurrentVideo);
+    };
+  }, []);
+
+  useEffect(() => {
+    setTaskTab(initialTaskTab);
+  }, [initialTaskTab]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLibrary = async () => {
+      try {
+        const response = await fetch(`${API}/api/library`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) {
+          const videos: LibraryVideo[] = data.videos || [];
+          setLibraryVideos(videos);
+          setSelectedVideoId((current) => current || videos[0]?.video_id || "");
+        }
+      } catch {}
+    };
+    loadLibrary();
+    const interval = setInterval(loadLibrary, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentVideoId) {
+      setProcessingState(null);
+      return;
+    }
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const response = await fetch(`${API}/api/progress/${currentVideoId}`);
+        if (!response.ok) return;
+        const data: ProcessingState = await response.json();
+        if (!cancelled) setProcessingState(data);
+      } catch {}
+    };
+
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [currentVideoId]);
+
+  useEffect(() => {
+    if (scopeMode === "specific" && !selectedVideoId && libraryVideos.length > 0) {
+      setSelectedVideoId(libraryVideos[0].video_id);
+    }
+  }, [libraryVideos, scopeMode, selectedVideoId]);
+
+  const contextLabel =
+    scopeMode === "library"
+      ? `Using ${libraryVideos.length} indexed videos`
+      : scopeMode === "specific"
+        ? `Using ${selectedVideo?.title ?? "selected video"}`
+        : currentVideoId
+          ? "Using current video"
+          : "Choose a video context";
+
+  const handleResult = (assistantMessage: ChatMessage) => {
+    setMessages((current) => [...current.filter((message) => !message.pending), assistantMessage]);
+    setSelectedMessageId(assistantMessage.id);
+    setResultTab("answer");
+  };
+
+  const runRequest = async (submittedQuery: string) => {
+    const normalizedQuery = submittedQuery.trim();
+    if (!normalizedQuery) return;
+    const canRun = taskTab === "library" || scopeMode === "library" || Boolean(resolvedVideoId);
+    if (!canRun) return;
+
+    const pendingId = buildId("assistant");
+    setMessages((current) => [
+      ...current,
+      { id: buildId("user"), role: "user", content: normalizedQuery },
+      { id: pendingId, role: "assistant", content: "", pending: true, title: taskTab === "search" ? "Searching" : activeModeConfig.label },
+    ]);
     setIsSearching(true);
-    setResults(null);
-    setPlayingVideo(null);
+    setQuery("");
 
     try {
-      const response = await fetch(`${API}/api/search`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch results");
-
-      const data: SearchResponse = await response.json();
-      setResults(data);
-    } catch (error) {
-      setResults({
-        answer: "An error occurred. Make sure the backend is running and a video has been processed.",
+      if (taskTab === "search") {
+        const response = await fetch(`${API}/api/search`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: normalizedQuery, video_id: resolvedVideoId }),
+        });
+        if (!response.ok) throw new Error("Failed");
+        const data: SearchResponse = await response.json();
+        handleResult({ id: pendingId, role: "assistant", title: "Grounded answer", content: data.answer, sources: data.sources, mode: "search" });
+      } else {
+        const response = await fetch(`${API}/api/workbench`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: activeMode,
+            video_id: resolvedVideoId,
+            query: normalizedQuery,
+            output_format: activeMode === "output_generator" ? outputFormat : null,
+            scope: scopeMode === "specific" ? "selected_video" : scopeMode === "library" ? "all_videos" : "current_video",
+          }),
+        });
+        if (!response.ok) throw new Error("Failed");
+        const data: WorkbenchResponse = await response.json();
+        handleResult({ id: pendingId, role: "assistant", title: data.title, content: data.content, sources: data.sources, mode: data.mode });
+      }
+    } catch {
+      handleResult({
+        id: pendingId,
+        role: "assistant",
+        title: "Temporary issue",
+        content: "Lumio could not complete that request right now. Please try again in a moment.",
         sources: [],
       });
     } finally {
@@ -54,144 +343,692 @@ export default function SearchInterface() {
     }
   };
 
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await runRequest(query || activeModeConfig.prompt);
+  };
+
+  const buildExportPayload = (format: "txt" | "md" | "json" | "html") => {
+    if (!activeMessage) return "";
+    const sources = (activeMessage.sources || []).map((source) => ({
+      timestamp: source.timestamp,
+      text: source.text,
+      video_id: source.video_id,
+    }));
+
+    if (format === "json") {
+      return JSON.stringify(
+        {
+          title: activeMessage.title || "Answer",
+          content: activeMessage.content,
+          mode: activeMessage.mode || null,
+          sources,
+        },
+        null,
+        2
+      );
+    }
+
+    if (format === "html") {
+      const sourceHtml = sources
+        .map(
+          (source) =>
+            `<li><strong>${source.timestamp}</strong> (${source.video_id})<br/>${source.text}</li>`
+        )
+        .join("");
+      return `<!doctype html><html><head><meta charset="utf-8"/><title>${activeMessage.title || "Lumio Export"}</title></head><body><h1>${activeMessage.title || "Lumio Export"}</h1><pre>${activeMessage.content}</pre>${sourceHtml ? `<h2>Sources</h2><ul>${sourceHtml}</ul>` : ""}</body></html>`;
+    }
+
+    const sourceLines = sources
+      .map((source) => `- ${source.timestamp} | ${source.video_id}\n  ${source.text}`)
+      .join("\n");
+
+    if (format === "txt") {
+      return `${activeMessage.title || "Answer"}\n\n${activeMessage.content}${sourceLines ? `\n\nSources\n${sourceLines}` : ""}`;
+    }
+
+    return `# ${activeMessage.title || "Answer"}\n\n${activeMessage.content}${sourceLines ? `\n\n## Sources\n${sourceLines}` : ""}`;
+  };
+
+  const downloadExport = () => {
+    if (!activeMessage) return;
+    const payload = buildExportPayload(exportFormat);
+    const blob = new Blob([payload], {
+      type:
+        exportFormat === "json"
+          ? "application/json"
+          : exportFormat === "html"
+            ? "text/html"
+            : "text/plain",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `lumio-answer.${exportFormat}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setExportStatus(`Downloaded as ${exportFormat.toUpperCase()}`);
+    window.setTimeout(() => setExportStatus(""), 2200);
+  };
+
+  const copyExport = async () => {
+    if (!activeMessage) return;
+    try {
+      await navigator.clipboard.writeText(buildExportPayload(exportFormat));
+      setExportStatus(`Copied ${exportFormat.toUpperCase()} to clipboard`);
+      window.setTimeout(() => setExportStatus(""), 2200);
+    } catch {
+      setExportStatus("Copy failed");
+      window.setTimeout(() => setExportStatus(""), 2200);
+    }
+  };
+
+  const printExport = () => {
+    if (!activeMessage) return;
+    const payload = buildExportPayload("html");
+    const popup = window.open("", "_blank", "width=960,height=720");
+    if (!popup) return;
+    popup.document.open();
+    popup.document.write(payload);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  };
+
   return (
-    <div className="w-full flex flex-col space-y-5">
-      {/* Search Bar */}
-      <div className="glass-card border-pulse overflow-hidden">
-        <form onSubmit={handleSearch} className="flex relative p-2">
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-10">
-            {isSearching ? (
-              <Loader2 className="animate-spin text-[#00d4ff]" size={18} />
-            ) : (
-              <Search size={18} className="text-[#8b949e]" />
-            )}
-          </div>
-          <input
-            type="text"
-            className="w-full bg-transparent border-none py-4 pl-12 pr-36 text-white placeholder-[#4a5568] focus:outline-none focus:ring-0 text-base rounded-xl font-light"
-            placeholder="Ask anything about your video in any language..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            disabled={isSearching}
-          />
-          <button
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] text-black font-semibold py-2 px-5 rounded-lg transition-all shadow-[0_0_15px_rgba(0,212,255,0.25)] hover:shadow-[0_0_25px_rgba(0,212,255,0.4)] disabled:opacity-40 disabled:cursor-not-allowed hidden sm:flex items-center gap-1.5"
-            disabled={!query.trim() || isSearching}
-          >
-            <Zap size={14} /> Search
-          </button>
-        </form>
-
-        {/* Scanning animation when searching */}
-        {isSearching && (
-          <div className="h-0.5 w-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-transparent via-[#00d4ff] to-transparent"
-              initial={{ x: "-100%" }}
-              animate={{ x: "100%" }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Results */}
-      <AnimatePresence mode="sync">
-        {results && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col space-y-5"
-          >
-            {/* AI Answer Card */}
-            <div className="glass-card p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 opacity-5 pointer-events-none">
-                <Sparkles size={128} className="text-[#00d4ff]" />
-              </div>
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#00d4ff] to-[#7c3aed] rounded-l-2xl" />
-
-              <h3 className="text-sm font-semibold flex items-center gap-2 mb-4 text-[#00d4ff] uppercase tracking-widest font-mono ml-2">
-                <Sparkles size={14} /> AI Analysis
-              </h3>
-              <div className="prose prose-invert max-w-none ml-2">
-                <p className="whitespace-pre-wrap text-[#c9d1d9] leading-relaxed text-sm">{results.answer}</p>
-              </div>
+    <section className="section-space pt-0">
+      <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_380px]">
+        <aside className="glass-card noise-surface rounded-[32px] p-5 md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="workspace-label">Workspace controls</div>
+              <div className="workspace-heading mt-3">Set the tool, scope, and search context.</div>
+              <div className="workspace-subtle mt-3">Switch tools quickly, choose the right video context, and drive the request from the center conversation panel.</div>
             </div>
+            {processingState?.is_complete ? <CheckCircle2 className="mt-1 h-5 w-5 text-[var(--success)]" /> : <Waves className="mt-1 h-5 w-5 text-[var(--primary)]" />}
+          </div>
 
-            {/* Sources Grid */}
-            {results.sources.length > 0 && (
-              <div>
-                <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-[#8b949e] mb-3 ml-1">
-                  ◈ Relevant Moments ({results.sources.length})
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {results.sources.map((source, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.07 }}
-                      className="group glass-card cursor-pointer overflow-hidden transition-all duration-200 hover:border-[rgba(0,212,255,0.4)] hover:shadow-[0_0_25px_rgba(0,212,255,0.1)]"
-                      onClick={() => setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp })}
-                    >
-                      {/* Frame Preview */}
-                      <div className="w-full h-32 bg-black relative overflow-hidden flex-shrink-0">
-                        {source.frame_path ? (
-                          <img
-                            src={`${API}/${source.frame_path.replace(/\\/g, "/")}`}
-                            alt={`Frame at ${source.timestamp}`}
-                            className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#8b949e]">
-                            <ImageIcon size={32} className="opacity-30" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-[rgba(0,0,0,0.7)] backdrop-blur px-2 py-1 rounded-md border border-[rgba(0,212,255,0.2)]">
-                          <PlayCircle size={11} className="text-[#00d4ff]" />
-                          <span className="text-white text-xs font-mono">{source.timestamp}</span>
-                        </div>
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-[rgba(0,212,255,0.05)] opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-
-                      {/* Text */}
-                      <div className="p-3">
-                        <p className="text-xs text-[#8b949e] line-clamp-3 leading-relaxed">
-                          {source.text.split("\n").filter((l) => l.trim()).map((line, i) => (
-                            <span key={i} className="block mb-0.5">
-                              {line.startsWith("Visual") ? "👁 " : "🔊 "}
-                              {line.replace(/Visual at \d+s:\s*/, "").replace(/Speech \[.*?\]:\s*/, "")}
-                            </span>
-                          ))}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
+          <div className="workspace-panel mt-6 rounded-[24px] p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+              <Layers3 className="h-4 w-4 text-[var(--primary)]" />
+              Index status
+            </div>
+            <div className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{processingState?.status || "Search becomes available once you ingest a video."}</div>
+            {processingState && (
+              <div className="mt-4">
+                <div className="h-2 rounded-full bg-[var(--surface-muted)]">
+                  <motion.div className="h-2 rounded-full bg-[linear-gradient(90deg,var(--primary),var(--accent))]" initial={{ width: 0 }} animate={{ width: `${processingState.percent}%` }} transition={{ duration: 0.4 }} />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[13px] text-[var(--muted-foreground)]">
+                  <span>{processingState.search_quality || "progressive"}</span>
+                  <span>{processingState.percent}%</span>
                 </div>
               </div>
             )}
+          </div>
 
-            {/* Video player */}
-            {playingVideo && (
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                <h4 className="text-xs font-mono font-semibold uppercase tracking-widest text-[#8b949e] mb-3 ml-1">◈ Playing</h4>
-                <VideoPlayer videoId={playingVideo.videoId} timestamp={playingVideo.timestamp} />
-              </motion.div>
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="workspace-label">Active tool</div>
+              <button
+                type="button"
+                onClick={() => setToolDrawerOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+              >
+                <LayoutGrid className="h-4 w-4 text-[var(--primary)]" />
+                Browse tools
+              </button>
+            </div>
+            <div className="mt-3 rounded-[24px] border border-[var(--primary-soft)] bg-[var(--surface-brand)] p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface-elevated)]">
+                  <ActiveToolIcon className="h-5 w-5 text-[var(--primary)]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-[var(--foreground)]">{activeModeConfig.label}</div>
+                  <div className="mt-2 text-[13px] leading-6 text-[var(--foreground)]/78">{activeModeConfig.prompt}</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 text-[13px] leading-6 text-[var(--muted-foreground)]">
+              Need a different mode? Open the tool drawer instead of scrolling through the full list.
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+              <Filter className="h-4 w-4 text-[var(--accent)]" />
+              Context
+            </div>
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {[
+                { id: "current", label: "Current" },
+                { id: "specific", label: "Choose video" },
+                { id: "library", label: "All videos" },
+              ].map((scope) => (
+                <button
+                  key={scope.id}
+                  type="button"
+                  onClick={() => setScopeMode(scope.id as "current" | "specific" | "library")}
+                  className={`rounded-full px-3 py-2 text-[13px] font-medium ${scopeMode === scope.id ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"}`}
+                >
+                  {scope.label}
+                </button>
+              ))}
+            </div>
+            {scopeMode === "specific" && (
+              <select value={selectedVideoId} onChange={(event) => setSelectedVideoId(event.target.value)} className="mt-4 w-full rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] outline-none">
+                {libraryVideos.length === 0 && <option value="">No indexed videos yet</option>}
+                {libraryVideos.map((video) => <option key={video.video_id} value={video.video_id}>{video.title}</option>)}
+              </select>
             )}
+            <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3">
+              <div className="text-[13px] text-[var(--muted-foreground)]">{contextLabel}</div>
+            </div>
+            {activeMode === "output_generator" && <input value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)} placeholder="Output format" className="mt-4 w-full rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] outline-none" />}
+          </div>
+        </aside>
 
-            {results.sources.length === 0 && (
-              <div className="py-12 text-center text-[#8b949e] border-2 border-dashed border-[rgba(0,212,255,0.1)] rounded-xl font-mono text-sm">
-                No strong matches found. Try a more specific query.
+        <div className="glass-card rounded-[32px] p-4 md:p-5">
+          <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">AI workspace</div>
+              <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                Ask naturally, follow up inline, and move between search and workbench without losing context.
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { id: "workbench", label: "Workbench", icon: Sparkles },
+                { id: "search", label: "Search", icon: Search },
+                { id: "library", label: "Library", icon: LibraryBig },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const active = taskTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setTaskTab(tab.id as "search" | "workbench" | "library")}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm ${
+                      active
+                        ? "bg-[var(--surface-brand)] text-[var(--foreground)]"
+                        : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {taskTab === "library" ? (
+            <div className="pt-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Video library</div>
+                  <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                    Browse indexed videos, filter the collection, and jump into a focused AI session.
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                  <input
+                    value={libraryFilter}
+                    onChange={(event) => setLibraryFilter(event.target.value)}
+                    placeholder="Search title, channel, or source"
+                    className="h-12 w-full rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] pl-11 pr-4 text-sm text-[var(--foreground)] outline-none md:w-80"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {visibleVideos.map((video, index) => (
+                  <motion.button
+                    key={video.video_id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedVideoId(video.video_id);
+                      setScopeMode("specific");
+                      setTaskTab("workbench");
+                    }}
+                    className="interactive-card group overflow-hidden rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-left"
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.28, delay: index * 0.03 }}
+                  >
+                    <div className="relative h-44 overflow-hidden bg-[linear-gradient(135deg,rgba(85,194,255,0.16),rgba(255,147,82,0.18))]">
+                      {video.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={video.thumbnail_url}
+                          alt={video.title}
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 scale-110 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_28%)] transition-transform duration-500 group-hover:scale-[1.16]" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,13,24,0.84)] via-[rgba(7,13,24,0.2)] to-transparent" />
+                      <div className="absolute left-5 top-5 rounded-full bg-[rgba(7,13,24,0.58)] px-3 py-1 text-[12px] font-medium text-white">
+                        {formatDuration(video.duration_seconds)}
+                      </div>
+                      <div className="absolute bottom-5 left-5 right-5">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(7,13,24,0.58)] px-3 py-1 text-[12px] text-white/90">
+                          <Clock3 className="h-3.5 w-3.5 text-[var(--primary)]" />
+                          {video.search_quality || "indexed"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-3 px-5 py-5">
+                      <div>
+                        <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">{video.title}</div>
+                        <div className="mt-2 text-sm text-[var(--muted-foreground)]">
+                          {video.channel || (video.source_type === "youtube_link" ? "YouTube link" : "Local upload")}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                          {video.source_type === "youtube_link" ? "YouTube" : "Upload"}
+                        </span>
+                        {video.is_complete && (
+                          <span className="rounded-full border border-[rgba(58,216,163,0.26)] px-3 py-1 text-[12px] text-[var(--success)]">
+                            Ready
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+                {visibleVideos.length === 0 && (
+                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
+                    <div className="text-lg font-medium text-[var(--foreground)]">No videos matched</div>
+                    <div className="mt-2 text-sm text-[var(--muted-foreground)]">Try a different filter or ingest a new video first.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="pt-5">
+              <div className="rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-brand)] text-[var(--foreground)]">
+                    <MessageSquareText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-[var(--foreground)]">{contextLabel}</div>
+                    <div className="mt-1 text-sm text-[var(--muted-foreground)]">
+                      {taskTab === "search" ? "Perplexity-style grounded search" : `${activeModeConfig.label} mode with contextual output`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm leading-7 text-[var(--muted-foreground)]">
+                  Tip: switch the context on the left, ask a natural question in the center, then open timestamps in the right panel to inspect the exact moment.
+                </div>
+                {messages.length === 0 && (
+                  <div className="rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-6">
+                    <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Start with a natural request</div>
+                    <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                      Try something like &quot;Give me the 3-minute version&quot;, &quot;Find the metric mentioned around the middle&quot;, or &quot;Turn this into a client summary&quot;.
+                    </div>
+                  </div>
+                )}
+
+                <AnimatePresence initial={false}>
+                  {messages.map((message) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 18 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      {message.pending ? (
+                        <ThinkingBubble />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (message.role === "assistant") {
+                              setSelectedMessageId(message.id);
+                              setResultTab("answer");
+                            }
+                          }}
+                          className={`max-w-[92%] rounded-[28px] border px-5 py-4 text-left shadow-[var(--shadow-soft)] ${
+                            message.role === "user"
+                              ? "border-[var(--primary-soft)] bg-[var(--surface-brand)] text-[var(--foreground)]"
+                              : "border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
+                          }`}
+                        >
+                          <div className="workspace-label">
+                            {message.role === "user" ? "You" : message.title || "Lumio"}
+                          </div>
+                          <div className="mt-3 line-clamp-6 whitespace-pre-wrap text-[16px] font-medium leading-8 text-[var(--foreground)]/92">{message.content}</div>
+                          {message.sources && message.sources.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {message.sources.slice(0, 3).map((source) => (
+                                <span
+                                  key={`${message.id}-${source.video_id}-${source.timestamp}`}
+                                  className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]"
+                                >
+                                  <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
+                                  {source.timestamp}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </button>
+                      )}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+
+              <form onSubmit={handleSubmit} className="sticky bottom-20 mt-6 rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel-solid)] p-3 shadow-[var(--shadow-strong)] lg:bottom-6">
+                <textarea
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={taskTab === "search" ? "Ask anything grounded in your video library..." : activeModeConfig.prompt}
+                  className="min-h-[104px] w-full resize-none bg-transparent px-3 py-3 text-[16px] leading-8 text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
+                />
+                <div className="flex flex-col gap-3 border-t border-[var(--panel-border)] px-3 pt-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      {taskTab === "search" ? "Grounded search" : activeModeConfig.label}
+                    </span>
+                    <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      {contextLabel}
+                    </span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isSearching || (!query.trim() && taskTab === "search") || (scopeMode !== "library" && !resolvedVideoId)}
+                    className="premium-button premium-button-primary w-full md:w-auto disabled:opacity-40"
+                  >
+                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {isSearching ? "Thinking..." : taskTab === "search" ? "Send question" : `Run ${activeModeConfig.label}`}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+ 
+        <aside className={`glass-card rounded-[32px] p-5 md:p-6 ${isSearching ? "thinking-shimmer" : ""}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="workspace-label">Output studio</div>
+              <div className="workspace-heading mt-3">Read the answer, inspect the evidence, then jump into playback.</div>
+              <div className="workspace-subtle mt-3">
+                Inspect the answer, trace evidence, and jump directly into the player.
+              </div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {[
+                { id: "answer", label: "Answer" },
+                { id: "evidence", label: "Evidence" },
+                { id: "player", label: "Player" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setResultTab(tab.id as "answer" | "evidence" | "player")}
+                  className={`rounded-full px-3 py-2 text-[13px] ${
+                    resultTab === tab.id
+                      ? "bg-[var(--surface-brand)] text-[var(--foreground)]"
+                      : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 min-h-[700px]">
+            {resultTab === "answer" && (
+              <div className="space-y-4">
+                {!activeMessage && !isSearching && (
+                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
+                    <Sparkles className="mx-auto h-8 w-8 text-[var(--primary)]" />
+                    <div className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Answers land here</div>
+                    <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">
+                      Use the center panel to ask a question or run a workbench task.
+                    </div>
+                  </div>
+                )}
+                {isSearching && !activeMessage && <ThinkingBubble />}
+                {activeMessage && (
+                  <div className="space-y-5">
+                    <div className="workspace-panel rounded-[24px] px-4 py-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="workspace-label">Export</div>
+                          <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Take this answer anywhere.</div>
+                          <div className="mt-1 text-sm text-[var(--muted-foreground)]">Download, copy, or print the current answer in the format you need.</div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={exportFormat}
+                            onChange={(event) => setExportFormat(event.target.value as "txt" | "md" | "json" | "html")}
+                            className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-muted)] px-3 py-2 text-[13px] text-[var(--foreground)] outline-none"
+                          >
+                            <option value="md">Markdown</option>
+                            <option value="txt">Text</option>
+                            <option value="json">JSON</option>
+                            <option value="html">HTML</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={downloadExport}
+                            className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-brand)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download
+                          </button>
+                          <button
+                            type="button"
+                            onClick={copyExport}
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            type="button"
+                            onClick={printExport}
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                          >
+                            Print / PDF
+                          </button>
+                        </div>
+                      </div>
+                      {exportStatus && (
+                        <div className="mt-3 text-[13px] text-[var(--muted-foreground)]">{exportStatus}</div>
+                      )}
+                    </div>
+                    <div className="workspace-panel rounded-[28px] px-5 py-5">
+                      <div className="workspace-label">
+                        {activeMessage.title || "Grounded answer"}
+                      </div>
+                      <div className="mt-4 border-l border-[var(--primary-soft)] pl-5">
+                        <div className="workbench-prose space-y-6">
+                          {renderRichText(activeMessage.content)}
+                        </div>
+                      </div>
+                    </div>
+                    {activeMessage.sources && activeMessage.sources.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {activeMessage.sources.slice(0, 6).map((source) => (
+                          <button
+                            key={`${source.video_id}-${source.timestamp}`}
+                            type="button"
+                            onClick={() => {
+                              setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
+                              setResultTab("player");
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                          >
+                            <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
+                            {source.timestamp}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+
+            {resultTab === "evidence" && (
+              <div className="space-y-4">
+                {!activeMessage?.sources?.length && (
+                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
+                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Evidence will show up here</div>
+                    <div className="mt-2 text-[15px] text-[var(--muted-foreground)]">
+                      Each answer is grounded in transcript and visual evidence when available.
+                    </div>
+                  </div>
+                )}
+                {activeMessage?.sources?.map((source, index) => (
+                  <motion.button
+                    key={`${source.video_id}-${source.timestamp}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
+                      setResultTab("player");
+                    }}
+                    className="interactive-card w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-3 text-left"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.03 }}
+                  >
+                    <div className="relative aspect-[16/9] overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,rgba(85,194,255,0.14),rgba(255,147,82,0.16))]">
+                      {source.frame_path ? (
+                        <Image
+                          src={`${API}/${source.frame_path.replace(/\\/g, "/")}`}
+                          alt={`Frame at ${source.timestamp}`}
+                          fill
+                          sizes="(min-width: 1280px) 20vw, 100vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
+                          <ImageIcon className="h-6 w-6" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-[12px] text-white">
+                        <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
+                        {source.timestamp}
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <div className="workspace-label">
+                        {source.video_id.slice(0, 8)}
+                      </div>
+                      <div className="mt-2 text-[15px] leading-8 text-[var(--foreground)]/88">{source.text}</div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            )}
+
+            {resultTab === "player" && (
+              <div className="space-y-4">
+                {playingVideo ? (
+                  <>
+                    <VideoPlayer videoId={playingVideo.videoId} timestamp={playingVideo.timestamp} />
+                    <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4 text-sm leading-7 text-[var(--muted-foreground)]">
+                      Jumped to <span className="font-medium text-[var(--foreground)]">{playingVideo.timestamp}</span> in{" "}
+                      <span className="font-medium text-[var(--foreground)]">{playingVideo.videoId.slice(0, 8)}</span>.
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
+                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Mini player stands by here</div>
+                    <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">
+                      Click any citation or evidence card to sync the answer with the exact video moment.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+
+      <AnimatePresence>
+        {toolDrawerOpen && (
+          <motion.div
+            className="fixed inset-0 z-[85] flex items-end justify-center bg-[rgba(7,13,24,0.56)] p-4 backdrop-blur-xl md:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setToolDrawerOpen(false)}
+          >
+            <motion.div
+              className="glass-card w-full max-w-3xl rounded-[32px] p-5 md:p-6"
+              initial={{ opacity: 0, y: 28, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Choose a tool</div>
+                  <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                    Pick the kind of answer you want, then ask naturally in the workspace.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setToolDrawerOpen(false)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-6 grid max-h-[65vh] gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+                {workbenchModes.map((mode) => {
+                  const Icon = mode.icon;
+                  const active = activeMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        setTaskTab("workbench");
+                        setActiveMode(mode.id);
+                        setToolDrawerOpen(false);
+                      }}
+                      className={`interactive-card rounded-[24px] border p-4 text-left ${
+                        active
+                          ? "border-[var(--primary-soft)] bg-[var(--surface-brand)]"
+                          : "border-[var(--panel-border)] bg-[var(--surface-elevated)]"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface-muted)]">
+                          <Icon className={`h-5 w-5 ${active ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]"}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-[var(--foreground)]">{mode.label}</div>
+                          <div className="mt-2 text-[13px] leading-6 text-[var(--muted-foreground)]">{mode.prompt}</div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </section>
   );
 }

@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { UploadCloud, CheckCircle2, AlertCircle, FileVideo, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "An error occurred during processing.";
+
 export default function UploadVideo() {
   const [file, setFile] = useState<File | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -68,8 +70,8 @@ export default function UploadVideo() {
       }
       
       setUploadStatus("success");
-    } catch (error: any) {
-      setErrorMessage(error.message || "An error occurred during processing.");
+    } catch (error: unknown) {
+      setErrorMessage(getErrorMessage(error));
       setUploadStatus("error");
     }
   };

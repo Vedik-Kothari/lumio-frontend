@@ -2,11 +2,23 @@
 import { useState } from 'react';
 import { Search, Clock, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
+
+interface SearchSource {
+  timestamp: string;
+  text: string;
+  frame_path: string;
+}
+
+interface SearchResult {
+  answer: string;
+  sources: SearchSource[];
+}
 
 export default function SearchSection() {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<SearchResult | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +34,7 @@ export default function SearchSection() {
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
       setResult(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setResult({ answer: "An error occurred while fetching the answer.", sources: [] });
     } finally {
@@ -92,7 +104,7 @@ export default function SearchSection() {
                   </span>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {result.sources.slice(0, 4).map((source: any, i: number) => (
+                  {result.sources.slice(0, 4).map((source, i) => (
                     <motion.div 
                       key={i} 
                       initial={{ opacity: 0, scale: 0.95 }}
@@ -107,10 +119,12 @@ export default function SearchSection() {
                        
                        {source.frame_path && (
                          <div className="w-full aspect-video rounded-lg overflow-hidden bg-black ring-1 ring-white/10 relative">
-                           <img 
+                           <Image
                              src={`http://localhost:8000/${source.frame_path.replace(/\\/g, '/')}`} 
                              alt={`Frame at ${source.timestamp}`}
-                             className="object-cover w-full h-full opacity-80 group-hover:opacity-100 transition-opacity"
+                             fill
+                             sizes="(min-width: 768px) 50vw, 100vw"
+                             className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                            />
                          </div>
                        )}
