@@ -77,12 +77,10 @@ export default function AppShell({
             <div className="flex h-18 items-center justify-between gap-4 py-4">
               <div className="flex items-center gap-4">
                 <Link href="/" className="group inline-flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] shadow-[var(--shadow-soft)]">
-                    <div className="h-5 w-5 rounded-full bg-[radial-gradient(circle,var(--primary)_0%,rgba(249,115,22,0.95)_55%,transparent_70%)] opacity-90 transition-transform duration-300 group-hover:scale-110" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-medium uppercase tracking-[0.26em] text-[var(--primary)]">{eyebrow}</div>
-                    <div className="mt-1 text-sm font-medium text-[var(--foreground)]">Video intelligence workspace</div>
+                  <div className="brand-mark transition-transform duration-300 group-hover:scale-[1.04]" />
+                  <div className="brand-copy">
+                    <div className="brand-wordmark">{eyebrow}</div>
+                    <div className="brand-subtitle">Video intelligence workspace</div>
                   </div>
                 </Link>
 

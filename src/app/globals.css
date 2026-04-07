@@ -250,6 +250,61 @@ button,
   box-shadow: 0 0 0 6px rgba(85, 194, 255, 0.12);
 }
 
+.brand-mark {
+  position: relative;
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.1rem;
+  border: 1px solid var(--panel-border);
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.3), transparent 28%),
+    linear-gradient(145deg, rgba(85, 194, 255, 0.22), rgba(255, 147, 82, 0.2));
+  box-shadow: var(--shadow-soft);
+}
+
+.brand-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(85, 194, 255, 0.98) 0%, rgba(255, 147, 82, 0.96) 62%, rgba(255, 147, 82, 0.08) 100%);
+  filter: saturate(120%);
+}
+
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(8, 16, 29, 0.34);
+  background: rgba(8, 16, 29, 0.18);
+  backdrop-filter: blur(2px);
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-wordmark {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.brand-subtitle {
+  margin-top: 0.18rem;
+  font-size: 0.96rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--foreground) 88%, transparent);
+}
+
 .workbench-prose {
   max-width: 78ch;
 }

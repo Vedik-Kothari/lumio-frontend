@@ -1,14 +1,38 @@
 # Lumio Frontend
 
-Next.js frontend for Lumio, an AI-first video intelligence workspace for ingesting videos, querying indexed content, browsing a library, and exporting grounded answers.
+The Lumio frontend is a Next.js application for ingesting videos, querying indexed content, reviewing evidence, browsing the library, and exporting AI outputs.
 
-## Product Areas
+## Frontend Features
 
-- Overview landing page
-- Ingest flow for uploads and YouTube links
-- AI workspace for search, evidence, and playback
-- Library browsing for indexed videos
-- Dark and light theme support
+- Overview page for product entry
+- Ingest page for file uploads and video links
+- AI workspace with separate answer, evidence, and player views
+- Library page for indexed videos
+- Theme switching
+- Export actions for generated answers
+- Quick actions palette
+- Interactive UI with motion and layered surfaces
+
+## Pages
+
+- `/`
+  overview and product entry
+- `/ingest`
+  upload files or ingest links
+- `/workspace`
+  ask questions, run tools, inspect evidence, and play cited moments
+- `/library`
+  browse indexed videos and open them in context
+
+## UI Capabilities
+
+- Dark and light themes
+- Responsive layout
+- AI-first workspace structure
+- Tool selection for different analysis modes
+- Evidence-linked results
+- Synced player jumps
+- Export as Markdown, text, JSON, HTML, or print/PDF
 
 ## Stack
 
@@ -27,11 +51,10 @@ Create `frontend/.env.local`:
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-## Local Development
-
-From the `frontend` folder:
+## Run Locally
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
@@ -47,42 +70,9 @@ npm run build
 npm run start
 ```
 
-## Deployment
-
-This app can be deployed independently to Vercel or any Next.js-compatible host.
-
-Set the production environment variable:
-
-```env
-NEXT_PUBLIC_API_URL=https://your-backend-domain
-```
-
-## Suggested Standalone Repo Contents
-
-When splitting into a frontend-only repository, keep:
-
-- `src/`
-- `public/`
-- `package.json`
-- `package-lock.json`
-- `tsconfig.json`
-- `next.config.ts`
-- `postcss.config.mjs`
-- `eslint.config.mjs`
-- `.gitignore`
-- `README.md`
-
-Do not commit:
-
-- `.env.local`
-- `.next/`
-- `node_modules/`
-- local log files
-- `.vercel/`
-
 ## Backend Contract
 
-The frontend expects the backend to expose:
+The frontend expects the backend to provide:
 
 - `/api/upload`
 - `/api/upload-link`
@@ -91,3 +81,47 @@ The frontend expects the backend to expose:
 - `/api/workbench`
 - `/api/library`
 - `/api/video/{video_id}`
+
+## Main Frontend Areas
+
+### Ingest
+
+- switch between local file and link upload
+- live progress indicator
+- search-ready and completion states
+- jump directly into workspace or library
+
+### Workspace
+
+- choose context: current video, selected video, or library-wide
+- switch between workbench modes
+- ask natural-language questions
+- inspect answer, evidence, and player in separate tabs
+- export the active response
+
+### Library
+
+- browse indexed videos
+- inspect readiness and metadata
+- select a specific video for analysis
+
+## Deployment
+
+Recommended:
+
+- deploy to Vercel
+- point `NEXT_PUBLIC_API_URL` to the deployed backend
+
+Production variable:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-domain
+```
+
+## Do Not Commit
+
+- `.env.local`
+- `.next/`
+- `node_modules/`
+- local logs
+- `.vercel/`
