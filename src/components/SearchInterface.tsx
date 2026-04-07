@@ -458,7 +458,7 @@ export default function SearchInterface({
 
   return (
     <section className="section-space pt-0">
-      <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_380px]">
+      <div className="grid gap-6 xl:grid-cols-[290px_minmax(0,1.45fr)_minmax(340px,0.95fr)]">
         <aside className="glass-card noise-surface rounded-[32px] p-5 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -488,27 +488,45 @@ export default function SearchInterface({
             )}
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-5">
             <div className="flex items-center justify-between gap-3">
-              <div className="workspace-label">Active tool</div>
+              <div className="workspace-label">Workspace controls</div>
               <button
                 type="button"
                 onClick={() => setToolDrawerOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-muted)] px-3 py-2 text-[13px] text-[var(--foreground)]"
               >
                 <LayoutGrid className="h-4 w-4 text-[var(--primary)]" />
                 Browse tools
               </button>
             </div>
-            <div className="mt-3 rounded-[24px] border border-[var(--primary-soft)] bg-[var(--surface-brand)] p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface-elevated)]">
-                  <ActiveToolIcon className="h-5 w-5 text-[var(--primary)]" />
+            <div className="mt-4 grid gap-3">
+              <div className="rounded-[20px] border border-[var(--primary-soft)] bg-[var(--surface-brand)] px-4 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface-elevated)]">
+                    <ActiveToolIcon className="h-5 w-5 text-[var(--primary)]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-base font-semibold text-[var(--foreground)]">{activeModeConfig.label}</div>
+                    <div className="mt-1 text-[13px] leading-6 text-[var(--foreground)]/78">Current tool</div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-[var(--foreground)]">{activeModeConfig.label}</div>
-                  <div className="mt-2 text-[13px] leading-6 text-[var(--foreground)]/78">{activeModeConfig.prompt}</div>
-                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "current", label: "Current" },
+                  { id: "specific", label: "Choose video" },
+                  { id: "library", label: "All videos" },
+                ].map((scope) => (
+                  <button
+                    key={scope.id}
+                    type="button"
+                    onClick={() => setScopeMode(scope.id as "current" | "specific" | "library")}
+                    className={`min-h-[52px] rounded-[18px] px-3 py-3 text-[13px] font-medium ${scopeMode === scope.id ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"}`}
+                  >
+                    {scope.label}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="mt-3 text-[13px] leading-6 text-[var(--muted-foreground)]">
@@ -516,26 +534,10 @@ export default function SearchInterface({
             </div>
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-4">
+          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-5">
             <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
               <Filter className="h-4 w-4 text-[var(--accent)]" />
               Context
-            </div>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {[
-                { id: "current", label: "Current" },
-                { id: "specific", label: "Choose video" },
-                { id: "library", label: "All videos" },
-              ].map((scope) => (
-                <button
-                  key={scope.id}
-                  type="button"
-                  onClick={() => setScopeMode(scope.id as "current" | "specific" | "library")}
-                  className={`rounded-full px-3 py-2 text-[13px] font-medium ${scopeMode === scope.id ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"}`}
-                >
-                  {scope.label}
-                </button>
-              ))}
             </div>
             {scopeMode === "specific" && (
               <div className="relative mt-4">
@@ -586,18 +588,19 @@ export default function SearchInterface({
               </div>
             )}
             <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3">
-              <div className="text-[13px] text-[var(--muted-foreground)]">{contextLabel}</div>
+              <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Current context</div>
+              <div className="mt-2 text-[14px] font-medium text-[var(--foreground)]">{contextLabel}</div>
             </div>
             {activeMode === "output_generator" && <input value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)} placeholder="Output format" className="mt-4 w-full rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] outline-none" />}
           </div>
         </aside>
 
-        <div className="glass-card rounded-[32px] p-4 md:p-5">
-          <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="glass-card rounded-[32px] p-4 md:p-5 xl:order-3">
+          <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4">
             <div>
               <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">AI workspace</div>
               <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                Ask naturally, follow up inline, and move between search and workbench without losing context.
+                Ask naturally, follow up fast, and keep the conversation close while the output studio stays front and center.
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -712,8 +715,8 @@ export default function SearchInterface({
               </div>
             </div>
           ) : (
-            <div className="pt-5">
-              <div className="rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4">
+            <div className="pt-5 xl:flex xl:h-full xl:flex-col">
+              <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-brand)] text-[var(--foreground)]">
                     <MessageSquareText className="h-5 w-5" />
@@ -727,18 +730,10 @@ export default function SearchInterface({
                 </div>
               </div>
 
-              <div className="mt-5 space-y-4">
-                <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm leading-7 text-[var(--muted-foreground)]">
-                  Tip: switch the context on the left, ask a natural question in the center, then open timestamps in the right panel to inspect the exact moment.
+              <div className="mt-4 space-y-3 xl:max-h-[40vh] xl:flex-1 xl:overflow-y-auto xl:pr-2">
+                <div className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm leading-7 text-[var(--muted-foreground)]">
+                  Tip: keep the question short here, then use the center output studio to read, inspect citations, and jump into playback.
                 </div>
-                {messages.length === 0 && (
-                  <div className="rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-6">
-                    <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Start with a natural request</div>
-                    <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                      Try something like &quot;Give me the 3-minute version&quot;, &quot;Find the metric mentioned around the middle&quot;, or &quot;Turn this into a client summary&quot;.
-                    </div>
-                  </div>
-                )}
 
                 <AnimatePresence initial={false}>
                   {messages.map((message) => (
@@ -790,12 +785,12 @@ export default function SearchInterface({
                 </AnimatePresence>
               </div>
 
-              <form onSubmit={handleSubmit} className="sticky bottom-20 mt-6 rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel-solid)] p-3 shadow-[var(--shadow-strong)] lg:bottom-6">
+              <form onSubmit={handleSubmit} className="sticky bottom-20 mt-6 rounded-[30px] border border-[var(--panel-border)] bg-[var(--panel-solid)] p-3 shadow-[var(--shadow-strong)] lg:bottom-6 xl:mt-5">
                 <textarea
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder={taskTab === "search" ? "Ask anything grounded in your video library..." : activeModeConfig.prompt}
-                  className="min-h-[104px] w-full resize-none bg-transparent px-3 py-3 text-[16px] leading-8 text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
+                  placeholder={taskTab === "search" ? "Ask anything grounded in your video library..." : "Ask a follow-up or refine the request..."}
+                  className="min-h-[88px] w-full resize-none bg-transparent px-3 py-3 text-[16px] leading-8 text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
                 />
                 <div className="flex flex-col gap-3 border-t border-[var(--panel-border)] px-3 pt-3 md:flex-row md:items-center md:justify-between">
                   <div className="flex gap-2 overflow-x-auto pb-1">
@@ -820,14 +815,33 @@ export default function SearchInterface({
           )}
         </div>
  
-        <aside className={`glass-card rounded-[32px] p-5 md:p-6 ${isSearching ? "thinking-shimmer" : ""}`}>
+        <aside className={`glass-card rounded-[32px] p-5 md:p-6 xl:order-2 ${isSearching ? "thinking-shimmer" : ""}`}>
           <div className="space-y-4">
-            <div>
-              <div className="workspace-label">Output studio</div>
-              <div className="workspace-heading mt-3">Answer, evidence, and playback in one readable view.</div>
-              <div className="workspace-subtle mt-2">
-                Keep the answer easy to read, then open evidence or jump into the player when you need proof.
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+              <div>
+                <div className="workspace-label">Output studio</div>
+                <div className="workspace-heading mt-3">Answer, evidence, and playback in one readable center stage.</div>
+                <div className="workspace-subtle mt-2">
+                  This is the main review surface. Read the answer first, then open evidence or playback only when you need to verify.
+                </div>
               </div>
+              {taskTab !== "search" && (
+                <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-4">
+                  <div className="workspace-label">Current task</div>
+                  <div className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--foreground)]">{activeModeConfig.prompt}</div>
+                  <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                    Try: &quot;Give me the 3-minute version&quot;, &quot;Find the metric mentioned around the middle&quot;, or &quot;Turn this into a client summary&quot;.
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      {activeModeConfig.label}
+                    </span>
+                    <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      {contextLabel}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-2 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1">
               {[
@@ -859,7 +873,7 @@ export default function SearchInterface({
                     <Sparkles className="mx-auto h-8 w-8 text-[var(--primary)]" />
                     <div className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Answers land here</div>
                     <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">
-                      Use the center panel to ask a question or run a workbench task.
+                      Use the right-side AI workspace to ask a question or run a workbench task.
                     </div>
                   </div>
                 )}
@@ -867,13 +881,13 @@ export default function SearchInterface({
                 {activeMessage && (
                   <div className="space-y-5">
                     <div className="workspace-panel rounded-[24px] px-4 py-4">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
                         <div>
                           <div className="workspace-label">Export</div>
                           <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Take this answer anywhere.</div>
                           <div className="mt-1 text-sm text-[var(--muted-foreground)]">Download, copy, or print the current answer in the format you need.</div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 xl:max-w-[320px] xl:justify-end">
                           <select
                             value={exportFormat}
                             onChange={(event) => setExportFormat(event.target.value as "txt" | "md" | "json" | "html")}
@@ -930,7 +944,7 @@ export default function SearchInterface({
                                 setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
                                 setResultTab("player");
                               }}
-                              className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                              className="inline-flex min-w-[108px] items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
                             >
                               <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
                               {source.timestamp}
@@ -940,7 +954,7 @@ export default function SearchInterface({
                       </div>
                     )}
                     <div className="workspace-panel rounded-[28px] px-5 py-5">
-                      <div className="flex items-start justify-between gap-4 border-b border-[var(--panel-border)] pb-4">
+                      <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4 md:flex-row md:items-start md:justify-between">
                         <div>
                           <div className="workspace-label">{activeMessage.title || "Grounded answer"}</div>
                           <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Readable answer canvas</div>
@@ -953,7 +967,7 @@ export default function SearchInterface({
                           Open evidence
                         </button>
                       </div>
-                      <div className="answer-scroll mt-5 pr-2">
+                      <div className="answer-scroll mt-5 pr-2 xl:max-h-[72vh]">
                         <div className="workbench-prose border-l border-[var(--primary-soft)] pl-5">
                           {renderRichText(activeMessage.content)}
                         </div>
