@@ -26,6 +26,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Trash2,
   WandSparkles,
   Waves,
   X,
@@ -53,6 +54,10 @@ interface WorkbenchResponse {
   content: string;
   sources: SourceChunk[];
   mode: string;
+}
+
+interface DeleteVideosResponse {
+  deleted_video_ids: string[];
 }
 
 interface ProcessingState {
@@ -186,7 +191,7 @@ export default function SearchInterface({
   const [query, setQuery] = useState("");
   const [activeMode, setActiveMode] = useState("save_time");
   const [outputFormat, setOutputFormat] = useState("Executive brief");
-  const [scopeMode, setScopeMode] = useState<"current" | "specific" | "library">("current");
+  const [scopeMode, setScopeMode] = useState<"current" | "specific" | "batch" | "library">("current");
   const [libraryFilter, setLibraryFilter] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -195,17 +200,21 @@ export default function SearchInterface({
   const [processingState, setProcessingState] = useState<ProcessingState | null>(null);
   const [libraryVideos, setLibraryVideos] = useState<LibraryVideo[]>([]);
   const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
   const [videoPickerOpen, setVideoPickerOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"txt" | "md" | "json" | "html">("md");
   const [exportStatus, setExportStatus] = useState("");
+  const [isDeletingVideos, setIsDeletingVideos] = useState(false);
 
   const activeModeConfig = useMemo(() => workbenchModes.find((mode) => mode.id === activeMode) ?? workbenchModes[0], [activeMode]);
   const ActiveToolIcon = activeModeConfig.icon;
   const deferredLibraryFilter = useDeferredValue(libraryFilter);
   const selectedVideo = libraryVideos.find((video) => video.video_id === selectedVideoId) || null;
+  const batchVideos = libraryVideos.filter((video) => selectedVideoIds.includes(video.video_id));
   const resolvedVideoId = scopeMode === "current" ? currentVideoId : scopeMode === "specific" ? selectedVideoId || null : null;
+  const resolvedVideoIds = scopeMode === "batch" ? selectedVideoIds : undefined;
   const assistantMessages = messages.filter((message) => message.role === "assistant" && !message.pending);
   const activeMessage = assistantMessages.find((message) => message.id === selectedMessageId) ?? assistantMessages[assistantMessages.length - 1] ?? null;
   const visibleVideos = useMemo(() => {
@@ -247,7 +256,11 @@ export default function SearchInterface({
         if (!cancelled) {
           const videos: LibraryVideo[] = data.videos || [];
           setLibraryVideos(videos);
-          setSelectedVideoId((current) => current || videos[0]?.video_id || "");
+          setSelectedVideoId((current) => {
+            if (current && videos.some((video) => video.video_id === current)) return current;
+            return videos[0]?.video_id || "";
+          });
+          setSelectedVideoIds((current) => current.filter((videoId) => videos.some((video) => video.video_id === videoId)));
         }
       } catch {}
     };
@@ -287,10 +300,13 @@ export default function SearchInterface({
     if (scopeMode === "specific" && !selectedVideoId && libraryVideos.length > 0) {
       setSelectedVideoId(libraryVideos[0].video_id);
     }
-  }, [libraryVideos, scopeMode, selectedVideoId]);
+    if (scopeMode === "batch" && selectedVideoIds.length === 0 && libraryVideos.length > 0) {
+      setSelectedVideoIds([libraryVideos[0].video_id]);
+    }
+  }, [libraryVideos, scopeMode, selectedVideoId, selectedVideoIds]);
 
   useEffect(() => {
-    if (scopeMode !== "specific") {
+    if (scopeMode !== "specific" && scopeMode !== "batch") {
       setVideoPickerOpen(false);
     }
   }, [scopeMode]);
@@ -298,11 +314,54 @@ export default function SearchInterface({
   const contextLabel =
     scopeMode === "library"
       ? `Using ${libraryVideos.length} indexed videos`
+      : scopeMode === "batch"
+        ? `Using ${selectedVideoIds.length} selected videos`
       : scopeMode === "specific"
         ? `Using ${selectedVideo?.title ?? "selected video"}`
         : currentVideoId
           ? "Using current video"
           : "Choose a video context";
+
+  const toggleBatchVideo = (videoId: string) => {
+    setSelectedVideoIds((current) =>
+      current.includes(videoId) ? current.filter((item) => item !== videoId) : [...current, videoId]
+    );
+  };
+
+  const deleteLibraryVideos = async (videoIds: string[]) => {
+    if (videoIds.length === 0 || isDeletingVideos) return;
+
+    setIsDeletingVideos(true);
+    try {
+      const response = await fetch(`${API}/api/library`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_ids: videoIds }),
+      });
+      if (!response.ok) {
+        throw new Error("Delete failed");
+      }
+
+      const data: DeleteVideosResponse = await response.json();
+      const deletedIds = new Set(data.deleted_video_ids || []);
+
+      setLibraryVideos((current) => current.filter((video) => !deletedIds.has(video.video_id)));
+      setSelectedVideoIds((current) => current.filter((videoId) => !deletedIds.has(videoId)));
+      setSelectedVideoId((current) => (current && deletedIds.has(current) ? "" : current));
+
+      if (currentVideoId && deletedIds.has(currentVideoId)) {
+        setCurrentVideoId(null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("current_video_id");
+        }
+      }
+    } catch {
+      setExportStatus("Could not remove those videos right now.");
+      window.setTimeout(() => setExportStatus(""), 2200);
+    } finally {
+      setIsDeletingVideos(false);
+    }
+  };
 
   const handleResult = (assistantMessage: ChatMessage) => {
     setMessages((current) => [...current.filter((message) => !message.pending), assistantMessage]);
@@ -313,7 +372,8 @@ export default function SearchInterface({
   const runRequest = async (submittedQuery: string) => {
     const normalizedQuery = submittedQuery.trim();
     if (!normalizedQuery) return;
-    const canRun = taskTab === "library" || scopeMode === "library" || Boolean(resolvedVideoId);
+    const hasBatchSelection = scopeMode === "batch" && selectedVideoIds.length > 0;
+    const canRun = taskTab === "library" || scopeMode === "library" || Boolean(resolvedVideoId) || hasBatchSelection;
     if (!canRun) return;
 
     const pendingId = buildId("assistant");
@@ -330,7 +390,7 @@ export default function SearchInterface({
         const response = await fetch(`${API}/api/search`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: normalizedQuery, video_id: resolvedVideoId }),
+          body: JSON.stringify({ query: normalizedQuery, video_id: resolvedVideoId, video_ids: resolvedVideoIds }),
         });
         if (!response.ok) throw new Error("Failed");
         const data: SearchResponse = await response.json();
@@ -342,9 +402,17 @@ export default function SearchInterface({
           body: JSON.stringify({
             mode: activeMode,
             video_id: resolvedVideoId,
+            video_ids: resolvedVideoIds,
             query: normalizedQuery,
             output_format: activeMode === "output_generator" ? outputFormat : null,
-            scope: scopeMode === "specific" ? "selected_video" : scopeMode === "library" ? "all_videos" : "current_video",
+            scope:
+              scopeMode === "specific"
+                ? "selected_video"
+                : scopeMode === "batch"
+                  ? "selected_videos"
+                  : scopeMode === "library"
+                    ? "all_videos"
+                    : "current_video",
           }),
         });
         if (!response.ok) throw new Error("Failed");
@@ -512,16 +580,17 @@ export default function SearchInterface({
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: "current", label: "Current" },
                   { id: "specific", label: "Choose video" },
+                  { id: "batch", label: "Batch videos" },
                   { id: "library", label: "All videos" },
                 ].map((scope) => (
                   <button
                     key={scope.id}
                     type="button"
-                    onClick={() => setScopeMode(scope.id as "current" | "specific" | "library")}
+                    onClick={() => setScopeMode(scope.id as "current" | "specific" | "batch" | "library")}
                     className={`min-h-[52px] rounded-[18px] px-3 py-3 text-[13px] font-medium ${scopeMode === scope.id ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"}`}
                   >
                     {scope.label}
@@ -539,7 +608,7 @@ export default function SearchInterface({
               <Filter className="h-4 w-4 text-[var(--accent)]" />
               Context
             </div>
-            {scopeMode === "specific" && (
+            {(scopeMode === "specific" || scopeMode === "batch") && (
               <div className="relative mt-4">
                 <button
                   type="button"
@@ -547,9 +616,15 @@ export default function SearchInterface({
                   className="flex w-full items-center justify-between rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-left"
                 >
                   <div className="min-w-0">
-                    <div className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Selected video</div>
+                    <div className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                      {scopeMode === "batch" ? "Selected videos" : "Selected video"}
+                    </div>
                     <div className="mt-1 truncate text-sm font-medium text-[var(--foreground)]">
-                      {selectedVideo?.title || "Choose from indexed videos"}
+                      {scopeMode === "batch"
+                        ? selectedVideoIds.length > 0
+                          ? `${selectedVideoIds.length} videos selected`
+                          : "Choose videos from the library"
+                        : selectedVideo?.title || "Choose from indexed videos"}
                     </div>
                   </div>
                   <ChevronDown className={`h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform ${videoPickerOpen ? "rotate-180" : ""}`} />
@@ -560,12 +635,16 @@ export default function SearchInterface({
                       <div className="rounded-[18px] px-4 py-3 text-sm text-[var(--muted-foreground)]">No indexed videos yet</div>
                     )}
                     {libraryVideos.map((video) => {
-                      const active = video.video_id === selectedVideoId;
+                      const active = scopeMode === "batch" ? selectedVideoIds.includes(video.video_id) : video.video_id === selectedVideoId;
                       return (
                         <button
                           key={video.video_id}
                           type="button"
                           onClick={() => {
+                            if (scopeMode === "batch") {
+                              toggleBatchVideo(video.video_id);
+                              return;
+                            }
                             setSelectedVideoId(video.video_id);
                             setVideoPickerOpen(false);
                           }}
@@ -583,6 +662,27 @@ export default function SearchInterface({
                         </button>
                       );
                     })}
+                    {scopeMode === "batch" && libraryVideos.length > 0 && (
+                      <div className="sticky bottom-0 mt-2 flex items-center justify-between gap-3 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3">
+                        <div className="text-[12px] text-[var(--muted-foreground)]">{selectedVideoIds.length} selected</div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedVideoIds([])}
+                            className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[12px] text-[var(--foreground)]"
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVideoPickerOpen(false)}
+                            className="rounded-full bg-[var(--surface-brand)] px-3 py-1.5 text-[12px] text-[var(--foreground)]"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -590,6 +690,20 @@ export default function SearchInterface({
             <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3">
               <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Current context</div>
               <div className="mt-2 text-[14px] font-medium text-[var(--foreground)]">{contextLabel}</div>
+              {scopeMode === "batch" && batchVideos.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {batchVideos.slice(0, 4).map((video) => (
+                    <span key={video.video_id} className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      {video.title}
+                    </span>
+                  ))}
+                  {batchVideos.length > 4 && (
+                    <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
+                      +{batchVideos.length - 4} more
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             {activeMode === "output_generator" && <input value={outputFormat} onChange={(event) => setOutputFormat(event.target.value)} placeholder="Output format" className="mt-4 w-full rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--foreground)] outline-none" />}
           </div>
@@ -636,17 +750,47 @@ export default function SearchInterface({
                 <div>
                   <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Video library</div>
                   <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                    Browse indexed videos, filter the collection, and jump into a focused AI session.
+                    Browse indexed videos, filter the collection, choose a batch, and jump into a focused AI session.
                   </div>
                 </div>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
-                  <input
-                    value={libraryFilter}
-                    onChange={(event) => setLibraryFilter(event.target.value)}
-                    placeholder="Search title, channel, or source"
-                    className="h-12 w-full rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] pl-11 pr-4 text-sm text-[var(--foreground)] outline-none md:w-80"
-                  />
+                <div className="flex flex-col gap-3 md:items-end">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
+                    <input
+                      value={libraryFilter}
+                      onChange={(event) => setLibraryFilter(event.target.value)}
+                      placeholder="Search title, channel, or source"
+                      className="h-12 w-full rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] pl-11 pr-4 text-sm text-[var(--foreground)] outline-none md:w-80"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScopeMode("batch");
+                        setSelectedVideoIds(visibleVideos.map((video) => video.video_id));
+                      }}
+                      className="rounded-full border border-[var(--panel-border)] px-4 py-2 text-[13px] text-[var(--foreground)]"
+                    >
+                      Select visible
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVideoIds([])}
+                      className="rounded-full border border-[var(--panel-border)] px-4 py-2 text-[13px] text-[var(--foreground)]"
+                    >
+                      Clear selection
+                    </button>
+                    <button
+                      type="button"
+                      disabled={selectedVideoIds.length === 0 || isDeletingVideos}
+                      onClick={() => void deleteLibraryVideos(selectedVideoIds)}
+                      className="inline-flex items-center gap-2 rounded-full bg-[rgba(255,107,107,0.12)] px-4 py-2 text-[13px] text-[rgb(255,166,166)] disabled:opacity-40"
+                    >
+                      {isDeletingVideos ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      Remove selected
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -656,6 +800,10 @@ export default function SearchInterface({
                     key={video.video_id}
                     type="button"
                     onClick={() => {
+                      if (scopeMode === "batch") {
+                        toggleBatchVideo(video.video_id);
+                        return;
+                      }
                       setSelectedVideoId(video.video_id);
                       setScopeMode("specific");
                       setTaskTab("workbench");
@@ -680,9 +828,27 @@ export default function SearchInterface({
                         {formatDuration(video.duration_seconds)}
                       </div>
                       <div className="absolute bottom-5 left-5 right-5">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(7,13,24,0.58)] px-3 py-1 text-[12px] text-white/90">
-                          <Clock3 className="h-3.5 w-3.5 text-[var(--primary)]" />
-                          {video.search_quality || "indexed"}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(7,13,24,0.58)] px-3 py-1 text-[12px] text-white/90">
+                            <Clock3 className="h-3.5 w-3.5 text-[var(--primary)]" />
+                            {video.search_quality || "indexed"}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              toggleBatchVideo(video.video_id);
+                              setScopeMode("batch");
+                            }}
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] ${
+                              selectedVideoIds.includes(video.video_id)
+                                ? "bg-[var(--surface-brand)] text-[var(--foreground)]"
+                                : "bg-[rgba(7,13,24,0.58)] text-white/90"
+                            }`}
+                          >
+                            {selectedVideoIds.includes(video.video_id) ? <Check className="h-3.5 w-3.5" /> : <Layers3 className="h-3.5 w-3.5" />}
+                            Batch
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -702,6 +868,47 @@ export default function SearchInterface({
                             Ready
                           </span>
                         )}
+                        {selectedVideoIds.includes(video.video_id) && (
+                          <span className="rounded-full border border-[var(--primary-soft)] px-3 py-1 text-[12px] text-[var(--primary)]">
+                            In batch
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedVideoId(video.video_id);
+                            setScopeMode("specific");
+                            setTaskTab("workbench");
+                          }}
+                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[12px] text-[var(--foreground)]"
+                        >
+                          Open in workspace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleBatchVideo(video.video_id);
+                            setScopeMode("batch");
+                          }}
+                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[12px] text-[var(--foreground)]"
+                        >
+                          {selectedVideoIds.includes(video.video_id) ? "Remove from batch" : "Add to batch"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void deleteLibraryVideos([video.video_id]);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-full bg-[rgba(255,107,107,0.12)] px-3 py-2 text-[12px] text-[rgb(255,166,166)]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
                       </div>
                     </div>
                   </motion.button>
@@ -803,7 +1010,11 @@ export default function SearchInterface({
                   </div>
                   <button
                     type="submit"
-                    disabled={isSearching || (!query.trim() && taskTab === "search") || (scopeMode !== "library" && !resolvedVideoId)}
+                    disabled={
+                      isSearching ||
+                      (!query.trim() && taskTab === "search") ||
+                      (scopeMode === "batch" ? selectedVideoIds.length === 0 : scopeMode !== "library" && !resolvedVideoId)
+                    }
                     className="premium-button premium-button-primary w-full md:w-auto disabled:opacity-40"
                   >
                     {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
