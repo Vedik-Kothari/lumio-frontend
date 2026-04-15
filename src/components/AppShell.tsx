@@ -72,15 +72,15 @@ export default function AppShell({
       <CommandPalette isOpen={commandOpen} onClose={() => setCommandOpen(false)} />
 
       <div className="relative z-10">
-        <header className="sticky top-0 z-40 border-b border-[var(--panel-border)] bg-[color:var(--shell-bg)]/88 backdrop-blur-2xl">
+        <header className="sticky top-0 z-40 border-b border-[var(--panel-border)] bg-[color:var(--shell-bg)]/88 shadow-[0_18px_48px_rgba(1,5,14,0.16)] backdrop-blur-3xl">
           <div className="app-container">
             <div className="flex h-18 items-center justify-between gap-4 py-4">
               <div className="flex items-center gap-4">
-                <Link href="/" className="group inline-flex items-center gap-3">
+                <Link href="/" className="group inline-flex items-center gap-3" data-hoverable="true">
                   <div className="brand-mark transition-transform duration-300 group-hover:scale-[1.04]" />
                   <div className="brand-copy">
                     <div className="brand-wordmark">{eyebrow}</div>
-                    <div className="brand-subtitle">Video intelligence workspace</div>
+                    <div className="brand-subtitle">Spatial video intelligence</div>
                   </div>
                 </Link>
 
@@ -92,9 +92,10 @@ export default function AppShell({
                       <Link
                         key={item.href}
                         href={item.href}
+                        data-hoverable="true"
                         className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition-all ${
                           active
-                            ? "border border-[var(--primary-soft)] bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
+                            ? "border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                             : "border border-transparent text-[var(--muted-foreground)] hover:border-[var(--panel-border)] hover:bg-[var(--surface-elevated)] hover:text-[var(--foreground)]"
                         }`}
                       >
@@ -110,7 +111,8 @@ export default function AppShell({
                 <button
                   type="button"
                   onClick={() => setCommandOpen(true)}
-                  className="hidden items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 text-sm text-[var(--muted-foreground)] transition-all hover:border-[var(--primary-soft)] hover:text-[var(--foreground)] md:flex"
+                  data-hoverable="true"
+                  className="hidden items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 text-sm text-[var(--muted-foreground)] shadow-[var(--shadow-soft)] transition-all hover:border-[var(--panel-border-strong)] hover:text-[var(--foreground)] md:flex"
                 >
                   <Command className="h-4 w-4" />
                   Quick Actions
@@ -122,7 +124,8 @@ export default function AppShell({
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)] transition-all hover:border-[var(--primary-soft)] hover:text-[var(--primary)]"
+                  data-hoverable="true"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all hover:border-[var(--panel-border-strong)] hover:text-[var(--primary)]"
                   aria-label="Toggle theme"
                 >
                   <AnimatePresence mode="wait" initial={false}>
@@ -141,7 +144,8 @@ export default function AppShell({
                 <button
                   type="button"
                   onClick={() => setMobileNavOpen((open) => !open)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)] transition-all hover:border-[var(--primary-soft)] lg:hidden"
+                  data-hoverable="true"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-[var(--shadow-soft)] transition-all hover:border-[var(--panel-border-strong)] lg:hidden"
                   aria-label="Toggle navigation"
                 >
                   {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -166,9 +170,10 @@ export default function AppShell({
                       <Link
                         key={item.href}
                         href={item.href}
+                        data-hoverable="true"
                         className={`flex items-center gap-3 rounded-[20px] px-4 py-3 text-sm transition-all ${
                           active
-                            ? "border border-[var(--primary-soft)] bg-[var(--surface-brand)] text-[var(--foreground)]"
+                            ? "border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                             : "border border-transparent bg-[var(--surface-elevated)] text-[var(--muted-foreground)]"
                         }`}
                       >
@@ -183,7 +188,8 @@ export default function AppShell({
                       setCommandOpen(true);
                       setMobileNavOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 rounded-[20px] bg-[var(--surface-elevated)] px-4 py-3 text-left text-sm text-[var(--foreground)]"
+                    data-hoverable="true"
+                    className="flex w-full items-center gap-3 rounded-[20px] bg-[var(--surface-elevated)] px-4 py-3 text-left text-sm text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                   >
                     <Command className="h-4 w-4 text-[var(--primary)]" />
                     Quick Actions
@@ -199,11 +205,14 @@ export default function AppShell({
             <section className="section-space">
               <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] lg:items-end">
                 <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 text-[13px] text-[var(--muted-foreground)] shadow-[var(--shadow-soft)]">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 font-mono text-[12px] uppercase tracking-[0.18em] text-[var(--muted-foreground)] shadow-[var(--shadow-soft)] backdrop-blur-xl">
                     <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
                     {eyebrow}
                   </div>
-                  <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-5xl xl:text-6xl">
+                  <h1
+                    className="mt-6 max-w-4xl bg-clip-text text-4xl font-semibold tracking-[-0.06em] text-transparent sm:text-5xl xl:text-[4.5rem]"
+                    style={{ backgroundImage: "var(--hero-gradient)" }}
+                  >
                     {title}
                   </h1>
                   {subtitle && (
@@ -220,16 +229,16 @@ export default function AppShell({
           </div>
         </main>
 
-        <footer className="border-t border-[var(--panel-border)] pb-10 pt-6">
+        <footer className="border-t border-[var(--panel-border)] bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.02))] pb-10 pt-6">
           <div className="app-container flex flex-col gap-4 text-sm text-[var(--muted-foreground)] md:flex-row md:items-center md:justify-between">
-            <div>Shortcuts: open quick actions with `Ctrl + K`.</div>
+            <div className="font-mono text-[12px] uppercase tracking-[0.16em]">Shortcuts: open quick actions with `Ctrl + K`.</div>
             <div>
-              Made with <span className="text-[#ef4444]">&hearts;</span> by Vedik Kothari
+              Made with <span className="text-[var(--accent)]">&hearts;</span> by Vedik Kothari
             </div>
           </div>
         </footer>
 
-        <nav className="fixed inset-x-4 bottom-4 z-40 rounded-[28px] border border-[var(--panel-border)] bg-[var(--shell-bg)]/95 p-2 shadow-[var(--shadow-strong)] backdrop-blur-2xl lg:hidden">
+        <nav className="fixed inset-x-4 bottom-4 z-40 rounded-[28px] border border-[var(--panel-border)] bg-[var(--shell-bg)]/95 p-2 shadow-[var(--shadow-strong)] backdrop-blur-3xl lg:hidden">
           <div className="grid grid-cols-4 gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -238,6 +247,7 @@ export default function AppShell({
                 <Link
                   key={item.href}
                   href={item.href}
+                  data-hoverable="true"
                   className={`flex flex-col items-center gap-1 rounded-[20px] px-3 py-2 text-[11px] transition-all ${
                     active
                       ? "bg-[var(--surface-brand)] text-[var(--foreground)]"

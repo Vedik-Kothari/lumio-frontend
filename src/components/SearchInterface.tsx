@@ -170,7 +170,7 @@ function renderRichText(content: string) {
 
 function ThinkingBubble() {
   return (
-    <div className="flex items-center gap-3 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3">
+    <div className="workspace-panel flex items-center gap-3 rounded-[24px] px-4 py-3">
       <div className="flex gap-1">
         <motion.span className="h-2 w-2 rounded-full bg-[var(--primary)]" animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0 }} />
         <motion.span className="h-2 w-2 rounded-full bg-[var(--primary)]" animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }} transition={{ duration: 0.8, repeat: Infinity, delay: 0.12 }} />
@@ -530,17 +530,17 @@ export default function SearchInterface({
         <aside className="glass-card noise-surface rounded-[32px] p-5 md:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="workspace-label">Workspace controls</div>
-              <div className="workspace-heading mt-3">Set the tool, scope, and search context.</div>
-              <div className="workspace-subtle mt-3">Switch tools quickly, choose the right video context, and drive the request from the center conversation panel.</div>
+              <div className="workspace-label">Command dock</div>
+              <div className="workspace-heading mt-3">Tune the mode, scope, and active context.</div>
+              <div className="workspace-subtle mt-3">This rail keeps the system state close: active tool, video scope, and the readiness of the current ingest pipeline.</div>
             </div>
             {processingState?.is_complete ? <CheckCircle2 className="mt-1 h-5 w-5 text-[var(--success)]" /> : <Waves className="mt-1 h-5 w-5 text-[var(--primary)]" />}
           </div>
 
           <div className="workspace-panel mt-6 rounded-[24px] p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+            <div className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--foreground)]">
               <Layers3 className="h-4 w-4 text-[var(--primary)]" />
-              Index status
+              System pulse
             </div>
             <div className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{processingState?.status || "Search becomes available once you ingest a video."}</div>
             {processingState && (
@@ -556,9 +556,9 @@ export default function SearchInterface({
             )}
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-5">
+          <div className="workspace-panel mt-6 rounded-[24px] p-5">
             <div className="flex items-center justify-between gap-3">
-              <div className="workspace-label">Workspace controls</div>
+              <div className="workspace-label">Active mode</div>
               <button
                 type="button"
                 onClick={() => setToolDrawerOpen(true)}
@@ -569,14 +569,14 @@ export default function SearchInterface({
               </button>
             </div>
             <div className="mt-4 grid gap-3">
-              <div className="rounded-[20px] border border-[var(--primary-soft)] bg-[var(--surface-brand)] px-4 py-4">
+              <div className="rounded-[20px] border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] px-4 py-4 shadow-[var(--shadow-glow)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface-elevated)]">
                     <ActiveToolIcon className="h-5 w-5 text-[var(--primary)]" />
                   </div>
                   <div className="min-w-0">
                     <div className="text-base font-semibold text-[var(--foreground)]">{activeModeConfig.label}</div>
-                    <div className="mt-1 text-[13px] leading-6 text-[var(--foreground)]/78">Current tool</div>
+                    <div className="mt-1 text-[13px] leading-6 text-[var(--foreground)]/78">Current inference mode</div>
                   </div>
                 </div>
               </div>
@@ -591,7 +591,8 @@ export default function SearchInterface({
                     key={scope.id}
                     type="button"
                     onClick={() => setScopeMode(scope.id as "current" | "specific" | "batch" | "library")}
-                    className={`min-h-[52px] rounded-[18px] px-3 py-3 text-[13px] font-medium ${scopeMode === scope.id ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] text-[var(--muted-foreground)]"}`}
+                    data-hoverable="true"
+                    className={`min-h-[52px] rounded-[18px] px-3 py-3 text-[13px] font-medium shadow-[var(--shadow-soft)] ${scopeMode === scope.id ? "border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] text-[var(--foreground)]" : "border border-[var(--panel-border)] bg-[var(--surface-muted)] text-[var(--muted-foreground)]"}`}
                   >
                     {scope.label}
                   </button>
@@ -599,21 +600,22 @@ export default function SearchInterface({
               </div>
             </div>
             <div className="mt-3 text-[13px] leading-6 text-[var(--muted-foreground)]">
-              Need a different mode? Open the tool drawer instead of scrolling through the full list.
+              Need a different answer shape? Open the tool drawer instead of hunting through a long list.
             </div>
           </div>
 
-          <div className="mt-6 rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-5">
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)]">
+          <div className="workspace-panel mt-6 rounded-[24px] p-5">
+            <div className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--foreground)]">
               <Filter className="h-4 w-4 text-[var(--accent)]" />
-              Context
+              Scope matrix
             </div>
             {(scopeMode === "specific" || scopeMode === "batch") && (
               <div className="relative mt-4">
                 <button
                   type="button"
                   onClick={() => setVideoPickerOpen((open) => !open)}
-                  className="flex w-full items-center justify-between rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-left"
+                  data-hoverable="true"
+                  className="flex w-full items-center justify-between rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 text-left shadow-[var(--shadow-soft)]"
                 >
                   <div className="min-w-0">
                     <div className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
@@ -630,7 +632,7 @@ export default function SearchInterface({
                   <ChevronDown className={`h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform ${videoPickerOpen ? "rotate-180" : ""}`} />
                 </button>
                 {videoPickerOpen && (
-                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 max-h-72 overflow-y-auto rounded-[22px] border border-[var(--panel-border)] bg-[var(--panel-solid)] p-2 shadow-[var(--shadow-strong)]">
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 max-h-72 overflow-y-auto rounded-[22px] border border-[var(--panel-border-strong)] bg-[var(--panel-solid)] p-2 shadow-[var(--shadow-strong)] backdrop-blur-3xl">
                     {libraryVideos.length === 0 && (
                       <div className="rounded-[18px] px-4 py-3 text-sm text-[var(--muted-foreground)]">No indexed videos yet</div>
                     )}
@@ -648,6 +650,7 @@ export default function SearchInterface({
                             setSelectedVideoId(video.video_id);
                             setVideoPickerOpen(false);
                           }}
+                          data-hoverable="true"
                           className={`flex w-full items-start justify-between gap-3 rounded-[18px] px-4 py-3 text-left ${
                             active ? "bg-[var(--surface-brand)] text-[var(--foreground)]" : "text-[var(--foreground)] hover:bg-[var(--surface-elevated)]"
                           }`}
@@ -669,14 +672,16 @@ export default function SearchInterface({
                           <button
                             type="button"
                             onClick={() => setSelectedVideoIds([])}
-                            className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[12px] text-[var(--foreground)]"
+                          data-hoverable="true"
+                          className="rounded-full border border-[var(--panel-border)] px-3 py-1.5 text-[12px] text-[var(--foreground)]"
                           >
                             Clear
                           </button>
                           <button
                             type="button"
                             onClick={() => setVideoPickerOpen(false)}
-                            className="rounded-full bg-[var(--surface-brand)] px-3 py-1.5 text-[12px] text-[var(--foreground)]"
+                          data-hoverable="true"
+                          className="rounded-full bg-[var(--surface-brand)] px-3 py-1.5 text-[12px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                           >
                             Done
                           </button>
@@ -687,7 +692,7 @@ export default function SearchInterface({
                 )}
               </div>
             )}
-            <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3">
+            <div className="mt-4 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] px-4 py-3 shadow-[var(--shadow-soft)]">
               <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Current context</div>
               <div className="mt-2 text-[14px] font-medium text-[var(--foreground)]">{contextLabel}</div>
               {scopeMode === "batch" && batchVideos.length > 0 && (
@@ -712,9 +717,10 @@ export default function SearchInterface({
         <div className="glass-card rounded-[32px] p-4 md:p-5 xl:order-3">
           <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4">
             <div>
-              <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">AI workspace</div>
+              <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Conversation console</div>
+              <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">AI workspace</div>
               <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                Ask naturally, follow up fast, and keep the conversation close while the output studio stays front and center.
+                Ask naturally, refine quickly, and keep the live conversation close while the output studio remains the main reading surface.
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -748,9 +754,10 @@ export default function SearchInterface({
             <div className="pt-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Video library</div>
+                  <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Signal library</div>
+                  <div className="mt-2 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Indexed recordings</div>
                   <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                    Browse indexed videos, filter the collection, choose a batch, and jump into a focused AI session.
+                    Browse indexed recordings, filter the collection, choose a batch, and jump into a focused AI session.
                   </div>
                 </div>
                 <div className="flex flex-col gap-3 md:items-end">
@@ -760,8 +767,8 @@ export default function SearchInterface({
                       value={libraryFilter}
                       onChange={(event) => setLibraryFilter(event.target.value)}
                       placeholder="Search title, channel, or source"
-                      className="h-12 w-full rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] pl-11 pr-4 text-sm text-[var(--foreground)] outline-none md:w-80"
-                    />
+                    className="h-12 w-full rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] pl-11 pr-4 text-sm text-[var(--foreground)] shadow-[var(--shadow-soft)] outline-none md:w-80"
+                  />
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -770,14 +777,16 @@ export default function SearchInterface({
                         setScopeMode("batch");
                         setSelectedVideoIds(visibleVideos.map((video) => video.video_id));
                       }}
-                      className="rounded-full border border-[var(--panel-border)] px-4 py-2 text-[13px] text-[var(--foreground)]"
+                      data-hoverable="true"
+                      className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                     >
                       Select visible
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedVideoIds([])}
-                      className="rounded-full border border-[var(--panel-border)] px-4 py-2 text-[13px] text-[var(--foreground)]"
+                      data-hoverable="true"
+                      className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                     >
                       Clear selection
                     </button>
@@ -785,7 +794,8 @@ export default function SearchInterface({
                       type="button"
                       disabled={selectedVideoIds.length === 0 || isDeletingVideos}
                       onClick={() => void deleteLibraryVideos(selectedVideoIds)}
-                      className="inline-flex items-center gap-2 rounded-full bg-[rgba(255,107,107,0.12)] px-4 py-2 text-[13px] text-[rgb(255,166,166)] disabled:opacity-40"
+                      data-hoverable="true"
+                      className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,107,107,0.18)] bg-[linear-gradient(135deg,rgba(255,107,107,0.12),rgba(255,161,124,0.1))] px-4 py-2 text-[13px] text-[rgb(255,166,166)] shadow-[var(--shadow-soft)] disabled:opacity-40"
                     >
                       {isDeletingVideos ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       Remove selected
@@ -799,6 +809,7 @@ export default function SearchInterface({
                   <motion.button
                     key={video.video_id}
                     type="button"
+                    data-hoverable="true"
                     onClick={() => {
                       if (scopeMode === "batch") {
                         toggleBatchVideo(video.video_id);
@@ -808,12 +819,12 @@ export default function SearchInterface({
                       setScopeMode("specific");
                       setTaskTab("workbench");
                     }}
-                    className="interactive-card group overflow-hidden rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-left"
+                    className="interactive-card semantic-sparkline group overflow-hidden rounded-[28px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-left shadow-[var(--shadow-soft)]"
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.28, delay: index * 0.03 }}
                   >
-                    <div className="relative h-44 overflow-hidden bg-[linear-gradient(135deg,rgba(85,194,255,0.16),rgba(255,147,82,0.18))]">
+                    <div className="relative h-44 overflow-hidden bg-[linear-gradient(135deg,rgba(247,178,59,0.18),rgba(105,210,178,0.14),rgba(248,205,138,0.18))]">
                       {video.thumbnail_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -822,7 +833,7 @@ export default function SearchInterface({
                           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
                         />
                       ) : null}
-                      <div className="absolute inset-0 scale-110 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_28%)] transition-transform duration-500 group-hover:scale-[1.16]" />
+                      <div className="absolute inset-0 scale-110 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(247,178,59,0.16),transparent_28%),radial-gradient(circle_at_center,rgba(105,210,178,0.08),transparent_36%)] transition-transform duration-500 group-hover:scale-[1.18]" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[rgba(7,13,24,0.84)] via-[rgba(7,13,24,0.2)] to-transparent" />
                       <div className="absolute left-5 top-5 rounded-full bg-[rgba(7,13,24,0.58)] px-3 py-1 text-[12px] font-medium text-white">
                         {formatDuration(video.duration_seconds)}
@@ -840,7 +851,8 @@ export default function SearchInterface({
                               toggleBatchVideo(video.video_id);
                               setScopeMode("batch");
                             }}
-                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] ${
+                          data-hoverable="true"
+                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] shadow-[var(--shadow-soft)] ${
                               selectedVideoIds.includes(video.video_id)
                                 ? "bg-[var(--surface-brand)] text-[var(--foreground)]"
                                 : "bg-[rgba(7,13,24,0.58)] text-white/90"
@@ -852,7 +864,7 @@ export default function SearchInterface({
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-3 px-5 py-5">
+                    <div className="space-y-3 px-5 pb-8 pt-5">
                       <div>
                         <div className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">{video.title}</div>
                         <div className="mt-2 text-sm text-[var(--muted-foreground)]">
@@ -860,6 +872,9 @@ export default function SearchInterface({
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                          Semantic trace live
+                        </span>
                         <span className="rounded-full border border-[var(--panel-border)] px-3 py-1 text-[12px] text-[var(--muted-foreground)]">
                           {video.source_type === "youtube_link" ? "YouTube" : "Upload"}
                         </span>
@@ -883,7 +898,8 @@ export default function SearchInterface({
                             setScopeMode("specific");
                             setTaskTab("workbench");
                           }}
-                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[12px] text-[var(--foreground)]"
+                          data-hoverable="true"
+                          className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[12px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                         >
                           Open in workspace
                         </button>
@@ -894,7 +910,8 @@ export default function SearchInterface({
                             toggleBatchVideo(video.video_id);
                             setScopeMode("batch");
                           }}
-                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[12px] text-[var(--foreground)]"
+                          data-hoverable="true"
+                          className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[12px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                         >
                           {selectedVideoIds.includes(video.video_id) ? "Remove from batch" : "Add to batch"}
                         </button>
@@ -904,7 +921,8 @@ export default function SearchInterface({
                             event.stopPropagation();
                             void deleteLibraryVideos([video.video_id]);
                           }}
-                          className="inline-flex items-center gap-2 rounded-full bg-[rgba(255,107,107,0.12)] px-3 py-2 text-[12px] text-[rgb(255,166,166)]"
+                          data-hoverable="true"
+                          className="inline-flex items-center gap-2 rounded-full border border-[rgba(255,107,107,0.18)] bg-[linear-gradient(135deg,rgba(255,107,107,0.12),rgba(255,161,124,0.1))] px-3 py-2 text-[12px] text-[rgb(255,166,166)] shadow-[var(--shadow-soft)]"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           Remove
@@ -929,9 +947,10 @@ export default function SearchInterface({
                     <MessageSquareText className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[var(--foreground)]">{contextLabel}</div>
+                    <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Active context</div>
+                    <div className="mt-1 text-sm font-medium text-[var(--foreground)]">{contextLabel}</div>
                     <div className="mt-1 text-sm text-[var(--muted-foreground)]">
-                      {taskTab === "search" ? "Perplexity-style grounded search" : `${activeModeConfig.label} mode with contextual output`}
+                      {taskTab === "search" ? "Grounded retrieval across your indexed evidence" : `${activeModeConfig.label} mode with contextual output`}
                     </div>
                   </div>
                 </div>
@@ -939,7 +958,7 @@ export default function SearchInterface({
 
               <div className="mt-4 space-y-3 xl:max-h-[40vh] xl:flex-1 xl:overflow-y-auto xl:pr-2">
                 <div className="rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm leading-7 text-[var(--muted-foreground)]">
-                  Tip: keep the question short here, then use the center output studio to read, inspect citations, and jump into playback.
+                  Tip: keep the prompt tight here, then use the center output studio to read the answer, inspect the evidence, and jump into playback.
                 </div>
 
                 <AnimatePresence initial={false}>
@@ -1028,17 +1047,17 @@ export default function SearchInterface({
  
         <aside className={`glass-card rounded-[32px] p-5 md:p-6 xl:order-2 ${isSearching ? "thinking-shimmer" : ""}`}>
           <div className="space-y-4">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
               <div>
                 <div className="workspace-label">Output studio</div>
                 <div className="workspace-heading mt-3">Answer, evidence, and playback in one readable center stage.</div>
                 <div className="workspace-subtle mt-2">
-                  This is the main review surface. Read the answer first, then open evidence or playback only when you need to verify.
+                  This is the main review surface. Read the answer first, then branch into evidence or playback only when you need proof.
                 </div>
               </div>
               {taskTab !== "search" && (
-                <div className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-5 py-4">
-                  <div className="workspace-label">Current task</div>
+                <div className="workspace-panel rounded-[22px] px-5 py-4">
+                  <div className="workspace-label">Prompt focus</div>
                   <div className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--foreground)]">{activeModeConfig.prompt}</div>
                   <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
                     Try: &quot;Give me the 3-minute version&quot;, &quot;Find the metric mentioned around the middle&quot;, or &quot;Turn this into a client summary&quot;.
@@ -1054,7 +1073,7 @@ export default function SearchInterface({
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-3 gap-2 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1">
+            <div className="grid grid-cols-3 gap-2 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1 shadow-[var(--shadow-soft)]">
               {[
                 { id: "answer", label: "Answer" },
                 { id: "evidence", label: "Evidence" },
@@ -1064,9 +1083,10 @@ export default function SearchInterface({
                   key={tab.id}
                   type="button"
                   onClick={() => setResultTab(tab.id as "answer" | "evidence" | "player")}
+                  data-hoverable="true"
                   className={`rounded-[14px] px-3 py-2 text-[13px] font-medium ${
                     resultTab === tab.id
-                      ? "bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
+                      ? "border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                       : "text-[var(--muted-foreground)]"
                   }`}
                 >
@@ -1080,11 +1100,11 @@ export default function SearchInterface({
             {resultTab === "answer" && (
               <div className="space-y-4">
                 {!activeMessage && !isSearching && (
-                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
+                  <div className="workspace-panel rounded-[28px] border-dashed px-6 py-14 text-center">
                     <Sparkles className="mx-auto h-8 w-8 text-[var(--primary)]" />
-                    <div className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Answers land here</div>
+                    <div className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">No active inference yet</div>
                     <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">
-                      Use the right-side AI workspace to ask a question or run a workbench task.
+                      Use the conversation console to run a search or workbench command and the result will resolve here.
                     </div>
                   </div>
                 )}
@@ -1096,13 +1116,13 @@ export default function SearchInterface({
                         <div>
                           <div className="workspace-label">Export</div>
                           <div className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]">Take this answer anywhere.</div>
-                          <div className="mt-1 text-sm text-[var(--muted-foreground)]">Download, copy, or print the current answer in the format you need.</div>
+                          <div className="mt-1 text-sm text-[var(--muted-foreground)]">Export the current response as structured output, markdown, plain text, or a printable brief.</div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 xl:max-w-[320px] xl:justify-end">
                           <select
                             value={exportFormat}
                             onChange={(event) => setExportFormat(event.target.value as "txt" | "md" | "json" | "html")}
-                            className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-muted)] px-3 py-2 text-[13px] text-[var(--foreground)] outline-none"
+                            className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-muted)] px-3 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)] outline-none"
                           >
                             <option value="md">Markdown</option>
                             <option value="txt">Text</option>
@@ -1112,7 +1132,8 @@ export default function SearchInterface({
                           <button
                             type="button"
                             onClick={downloadExport}
-                            className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-brand)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                            data-hoverable="true"
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] px-3 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                           >
                             <Download className="h-4 w-4" />
                             Download
@@ -1120,14 +1141,16 @@ export default function SearchInterface({
                           <button
                             type="button"
                             onClick={copyExport}
-                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                            data-hoverable="true"
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                           >
                             Copy
                           </button>
                           <button
                             type="button"
                             onClick={printExport}
-                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                            data-hoverable="true"
+                            className="inline-flex items-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                           >
                             Print / PDF
                           </button>
@@ -1142,7 +1165,7 @@ export default function SearchInterface({
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <div className="workspace-label">Jump points</div>
-                            <div className="mt-2 text-sm text-[var(--muted-foreground)]">Open the most relevant moments without leaving the answer.</div>
+                            <div className="mt-2 text-sm text-[var(--muted-foreground)]">Open the strongest supporting moments without leaving the answer.</div>
                           </div>
                           <div className="text-[12px] font-medium text-[var(--muted-foreground)]">{activeMessage.sources.length} citations</div>
                         </div>
@@ -1155,7 +1178,8 @@ export default function SearchInterface({
                                 setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
                                 setResultTab("player");
                               }}
-                              className="inline-flex min-w-[108px] items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)]"
+                              data-hoverable="true"
+                              className="inline-flex min-w-[108px] items-center justify-center gap-2 rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                             >
                               <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
                               {source.timestamp}
@@ -1164,7 +1188,7 @@ export default function SearchInterface({
                         </div>
                       </div>
                     )}
-                    <div className="workspace-panel rounded-[28px] px-5 py-5">
+                    <div className="workspace-panel rounded-[28px] px-5 py-5 shadow-[var(--shadow-strong)]">
                       <div className="flex flex-col gap-4 border-b border-[var(--panel-border)] pb-4 md:flex-row md:items-start md:justify-between">
                         <div>
                           <div className="workspace-label">{activeMessage.title || "Grounded answer"}</div>
@@ -1173,13 +1197,14 @@ export default function SearchInterface({
                         <button
                           type="button"
                           onClick={() => setResultTab("evidence")}
-                          className="rounded-full border border-[var(--panel-border)] px-3 py-2 text-[13px] font-medium text-[var(--foreground)]"
+                          data-hoverable="true"
+                          className="rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-3 py-2 text-[13px] font-medium text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                         >
                           Open evidence
                         </button>
                       </div>
                       <div className="answer-scroll mt-5 pr-2 xl:max-h-[72vh]">
-                        <div className="workbench-prose border-l border-[var(--primary-soft)] pl-5">
+                        <div className="workbench-prose rounded-[24px] border border-[var(--panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01))] px-5 py-5 shadow-[var(--inner-glow)]">
                           {renderRichText(activeMessage.content)}
                         </div>
                       </div>
@@ -1192,8 +1217,8 @@ export default function SearchInterface({
             {resultTab === "evidence" && (
               <div className="space-y-4">
                 {!activeMessage?.sources?.length && (
-                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
-                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Evidence will show up here</div>
+                  <div className="workspace-panel rounded-[28px] border-dashed px-6 py-14 text-center">
+                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Evidence rail fills here</div>
                     <div className="mt-2 text-[15px] text-[var(--muted-foreground)]">
                       Each answer is grounded in transcript and visual evidence when available.
                     </div>
@@ -1207,12 +1232,13 @@ export default function SearchInterface({
                       setPlayingVideo({ videoId: source.video_id, timestamp: source.timestamp });
                       setResultTab("player");
                     }}
-                    className="interactive-card w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-3 text-left"
+                    data-hoverable="true"
+                    className="interactive-card w-full rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-3 text-left shadow-[var(--shadow-soft)]"
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: index * 0.03 }}
                   >
-                    <div className="relative aspect-[16/9] overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,rgba(85,194,255,0.14),rgba(255,147,82,0.16))]">
+                    <div className="relative aspect-[16/9] overflow-hidden rounded-[18px] bg-[linear-gradient(135deg,rgba(247,178,59,0.16),rgba(105,210,178,0.12),rgba(248,205,138,0.16))] shadow-[var(--inner-glow)]">
                       {source.frame_path ? (
                         <Image
                           src={`${API}/${source.frame_path.replace(/\\/g, "/")}`}
@@ -1226,7 +1252,7 @@ export default function SearchInterface({
                           <ImageIcon className="h-6 w-6" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/16 to-transparent" />
                       <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-[12px] text-white">
                         <PlayCircle className="h-3.5 w-3.5 text-[var(--primary)]" />
                         {source.timestamp}
@@ -1248,14 +1274,14 @@ export default function SearchInterface({
                 {playingVideo ? (
                   <>
                     <VideoPlayer videoId={playingVideo.videoId} timestamp={playingVideo.timestamp} />
-                    <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4 text-sm leading-7 text-[var(--muted-foreground)]">
+                    <div className="workspace-panel rounded-[24px] px-4 py-4 text-sm leading-7 text-[var(--muted-foreground)]">
                       Jumped to <span className="font-medium text-[var(--foreground)]">{playingVideo.timestamp}</span> in{" "}
                       <span className="font-medium text-[var(--foreground)]">{playingVideo.videoId.slice(0, 8)}</span>.
                     </div>
                   </>
                 ) : (
-                  <div className="rounded-[28px] border border-dashed border-[var(--panel-border)] px-6 py-14 text-center">
-                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Mini player stands by here</div>
+                  <div className="workspace-panel rounded-[28px] border-dashed px-6 py-14 text-center">
+                    <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Timeline player stands by here</div>
                     <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">
                       Click any citation or evidence card to sync the answer with the exact video moment.
                     </div>
@@ -1286,7 +1312,8 @@ export default function SearchInterface({
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Choose a tool</div>
+                  <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Workbench modes</div>
+                  <div className="mt-2 text-xl font-semibold tracking-[-0.02em] text-[var(--foreground)]">Choose a tool</div>
                   <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
                     Pick the kind of answer you want, then ask naturally in the workspace.
                   </div>
@@ -1294,7 +1321,8 @@ export default function SearchInterface({
                 <button
                   type="button"
                   onClick={() => setToolDrawerOpen(false)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)]"
+                  data-hoverable="true"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--panel-border)] bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -1313,9 +1341,10 @@ export default function SearchInterface({
                         setActiveMode(mode.id);
                         setToolDrawerOpen(false);
                       }}
-                      className={`interactive-card rounded-[24px] border p-4 text-left ${
+                      data-hoverable="true"
+                      className={`interactive-card rounded-[24px] border p-4 text-left shadow-[var(--shadow-soft)] ${
                         active
-                          ? "border-[var(--primary-soft)] bg-[var(--surface-brand)]"
+                          ? "border-[var(--panel-border-strong)] bg-[var(--surface-brand)] shadow-[var(--shadow-glow)]"
                           : "border-[var(--panel-border)] bg-[var(--surface-elevated)]"
                       }`}
                     >

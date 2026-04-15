@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { JetBrains_Mono, Playfair_Display, Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair-display",
 });
 
 const jetBrainsMono = JetBrains_Mono({
@@ -34,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} min-h-full antialiased`}
+        className={`${spaceGrotesk.variable} ${playfairDisplay.variable} ${jetBrainsMono.variable} min-h-full antialiased`}
       >
         <ThemeProvider>
           {children}

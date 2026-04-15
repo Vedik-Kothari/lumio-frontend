@@ -161,51 +161,51 @@ export default function UploadSection() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-card border-pulse relative overflow-hidden p-6 shadow-[0_20px_60px_rgba(8,15,30,0.28)]"
+      className="glass-card border-pulse relative overflow-hidden p-6 shadow-[var(--shadow-strong)]"
     >
-      {/* Corner accent */}
       <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-0 h-0 border-[40px] border-transparent border-t-[rgba(56,189,248,0.16)] border-r-[rgba(249,115,22,0.16)]" />
+        <div className="absolute top-0 right-0 w-0 h-0 border-[40px] border-transparent border-t-[rgba(34,211,238,0.18)] border-r-[rgba(251,191,36,0.14)]" />
       </div>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-[var(--foreground)]">
-          <Video className="w-4 h-4 text-[#38bdf8]" />
-          <span>Upload source</span>
+          <Video className="w-4 h-4 text-[var(--primary)]" />
+          <span>Source ingest</span>
         </h2>
-        <div className="text-xs text-[var(--foreground)] bg-[rgba(52,211,153,0.1)] border border-[rgba(52,211,153,0.24)] px-2 py-1 rounded-full flex items-center gap-1.5 font-mono">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse inline-block"></span>
-          Multilingual
+        <div className="text-xs text-[var(--foreground)] bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.24)] px-2 py-1 rounded-full flex items-center gap-1.5 font-mono uppercase tracking-[0.18em]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse inline-block"></span>
+          System live
         </div>
       </div>
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">
         {[
-          { title: "Drop the source", body: "Use a local file or a link from YouTube and similar sites." },
-          { title: "Watch the pipeline", body: "See upload, transcription, and indexing without guessing what is happening." },
-          { title: "Jump into search", body: "As soon as the video is ready, move straight into the workspace or library." },
+          { title: "Capture the source", body: "Drop in a local recording or a video link from YouTube and similar sources." },
+          { title: "Watch the pipeline", body: "Track upload, transcript, framing, and vectorization as readable system states." },
+          { title: "Open the console", body: "Move into workspace or library the moment search becomes ready." },
         ].map((item) => (
-          <div key={item.title} className="rounded-[22px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-4 shadow-[var(--shadow-soft)]">
+          <div key={item.title} className="workspace-panel rounded-[22px] px-4 py-4">
             <div className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--foreground)]">{item.title}</div>
             <div className="mt-2 text-[15px] leading-7 text-[var(--muted-foreground)]">{item.body}</div>
           </div>
         ))}
       </div>
 
-      <div className="mb-5 flex rounded-xl border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1">
+      <div className="mb-5 flex rounded-xl border border-[var(--panel-border)] bg-[var(--surface-muted)] p-1 shadow-[var(--shadow-soft)]">
         {(["file", "link"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             disabled={isProcessing}
+            data-hoverable="true"
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeTab === tab
-                ? "border border-[rgba(56,189,248,0.28)] bg-[rgba(56,189,248,0.14)] text-[var(--foreground)]"
+                ? "border border-[var(--panel-border-strong)] bg-[var(--surface-brand)] text-[var(--foreground)] shadow-[var(--shadow-soft)]"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
             {tab === "file" ? <FileVideo className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
-            {tab === "file" ? "Local File" : "Video Link"}
+            {tab === "file" ? "Local file" : "Remote link"}
           </button>
         ))}
       </div>
@@ -228,20 +228,20 @@ export default function UploadSection() {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 disabled={isProcessing}
               />
-              <div className={`w-full h-36 flex flex-col justify-center items-center rounded-[24px] border-2 border-dashed transition-all duration-200 overflow-hidden ${
+              <div className={`w-full h-36 flex flex-col justify-center items-center rounded-[24px] border-2 border-dashed transition-all duration-200 overflow-hidden shadow-[var(--shadow-soft)] ${
                 file
-                  ? "border-[rgba(56,189,248,0.45)] bg-[rgba(56,189,248,0.08)]"
-                  : "border-[rgba(148,163,184,0.18)] bg-[rgba(6,10,18,0.38)] group-hover:border-[rgba(56,189,248,0.35)] group-hover:bg-[rgba(56,189,248,0.04)]"
+                  ? "border-[var(--panel-border-strong)] bg-[var(--surface-brand)]"
+                  : "border-[rgba(148,163,184,0.18)] bg-[rgba(6,10,18,0.38)] group-hover:border-[var(--panel-border-strong)] group-hover:bg-[var(--surface-brand)]"
               }`}>
                 {file ? (
                   <div className="px-4 text-center">
                     <div className="mx-auto max-w-[88%] truncate text-sm font-medium text-[var(--foreground)]">{file.name}</div>
-                    <div className="mt-2 text-sm text-[var(--muted-foreground)]">Ready to process this recording.</div>
+                    <div className="mt-2 text-sm text-[var(--muted-foreground)]">Source staged and ready for indexing.</div>
                   </div>
                 ) : (
                   <>
-                    <UploadCloud className="w-7 h-7 text-[#94a3b8] mb-3 group-hover:text-[#38bdf8] transition-colors" />
-                    <span className="text-base font-semibold text-[var(--foreground)]">Drop a video here or click to browse</span>
+                    <UploadCloud className="w-7 h-7 text-[var(--muted-foreground)] mb-3 group-hover:text-[var(--primary)] transition-colors" />
+                    <span className="text-base font-semibold text-[var(--foreground)]">Drop a video here or click to stage a source</span>
                     <span className="mt-2 text-sm text-[var(--muted-foreground)]">MP4, MOV, or any browser-friendly format</span>
                   </>
                 )}
@@ -251,12 +251,13 @@ export default function UploadSection() {
             <button
               type="submit"
               disabled={!file || isProcessing || status === "success"}
-              className="w-full bg-gradient-to-r from-[#38bdf8] to-[#f97316] hover:from-[#67d3ff] hover:to-[#fb923c] text-slate-950 font-semibold py-2.5 px-4 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_12px_30px_rgba(56,189,248,0.18)]"
+              data-hoverable="true"
+              className="premium-button premium-button-primary w-full rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {status === "idle" && "Process Video"}
+              {status === "idle" && "Initialize pipeline"}
               {status === "uploading" && <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>}
-              {status === "processing" && <><Loader2 className="w-4 h-4 animate-spin" /> AI Analyzing...</>}
-              {status === "success" && <><CheckCircle2 className="w-4 h-4" /> Ready for RAG</>}
+              {status === "processing" && <><Loader2 className="w-4 h-4 animate-spin" /> Building intelligence...</>}
+              {status === "success" && <><CheckCircle2 className="w-4 h-4" /> Search-ready</>}
               {status === "error" && "Retry Upload"}
             </button>
           </motion.form>
@@ -277,7 +278,7 @@ export default function UploadSection() {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
                 disabled={isProcessing}
-                className="w-full rounded-xl border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-[15px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[rgba(56,189,248,0.45)] focus:outline-none focus:ring-1 focus:ring-[rgba(56,189,248,0.25)]"
+                className="w-full rounded-xl border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-[15px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] shadow-[var(--shadow-soft)] focus:outline-none"
                 required
               />
             </div>
@@ -285,12 +286,13 @@ export default function UploadSection() {
             <button
               type="submit"
               disabled={!url || isProcessing || status === "success"}
-              className="w-full bg-gradient-to-r from-[#38bdf8] to-[#f97316] hover:from-[#67d3ff] hover:to-[#fb923c] text-slate-950 font-semibold py-2.5 px-4 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_12px_30px_rgba(249,115,22,0.18)]"
+              data-hoverable="true"
+              className="premium-button premium-button-primary w-full rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {status === "idle" && "Download & Process"}
+              {status === "idle" && "Fetch and index"}
               {status === "uploading" && <><Loader2 className="w-4 h-4 animate-spin" /> Downloading...</>}
-              {status === "processing" && <><Loader2 className="w-4 h-4 animate-spin" /> AI Analyzing...</>}
-              {status === "success" && <><CheckCircle2 className="w-4 h-4" /> Ready for RAG</>}
+              {status === "processing" && <><Loader2 className="w-4 h-4 animate-spin" /> Building intelligence...</>}
+              {status === "success" && <><CheckCircle2 className="w-4 h-4" /> Search-ready</>}
               {status === "error" && "Retry Link"}
             </button>
           </motion.form>
@@ -304,20 +306,20 @@ export default function UploadSection() {
           className="mt-4 space-y-2"
         >
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-[#dbeafe]">{progressDetails.status}</span>
-            <span className="text-[#94a3b8]">{progressDetails.percent}%</span>
+            <span className="text-[var(--foreground)]">{progressDetails.status}</span>
+            <span className="text-[var(--muted-foreground)]">{progressDetails.percent}%</span>
           </div>
           <div className="w-full bg-[rgba(0,0,0,0.35)] rounded-full h-1.5 border border-[rgba(148,163,184,0.14)] overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-[#38bdf8] to-[#f97316]"
+              className="h-full rounded-full bg-[linear-gradient(90deg,var(--primary),var(--accent))]"
               initial={{ width: 0 }}
               animate={{ width: `${progressDetails.percent}%` }}
               transition={{ ease: "easeInOut", duration: 0.5 }}
             />
           </div>
           {progressDetails.is_search_ready && !progressDetails.is_complete && (
-            <div className="text-[11px] text-[#94a3b8] font-mono flex items-center gap-2">
-              <Orbit className="w-3.5 h-3.5 text-[#34d399]" />
+            <div className="text-[11px] text-[var(--muted-foreground)] font-mono flex items-center gap-2">
+              <Orbit className="w-3.5 h-3.5 text-[var(--success)]" />
               Search works now. Visual refinement is still improving results in the background.
             </div>
           )}
@@ -331,17 +333,18 @@ export default function UploadSection() {
 
       {status === "success" && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 space-y-3">
-            <div className="rounded-[24px] border border-[rgba(58,216,163,0.22)] bg-[rgba(58,216,163,0.08)] px-4 py-4">
+            <div className="workspace-panel rounded-[24px] border-[rgba(123,211,137,0.22)] bg-[linear-gradient(135deg,rgba(123,211,137,0.14),rgba(247,178,59,0.06))] px-4 py-4">
               <div className="text-sm font-semibold text-[var(--foreground)]">Your video is ready to use.</div>
               <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
-                Move straight into search, open the library, or start another ingest job from here.
+                Open the workspace, browse the indexed library, or send another source through the pipeline.
               </div>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <button
               type="button"
               onClick={() => router.push("/workspace")}
-              className="inline-flex items-center justify-center gap-2 rounded-[20px] bg-gradient-to-r from-[#38bdf8] to-[#f97316] px-4 py-3 text-sm font-semibold text-slate-950"
+              data-hoverable="true"
+              className="premium-button premium-button-primary rounded-[20px] px-4 py-3 text-sm"
             >
               <SearchIcon className="h-4 w-4" />
               Open Search
@@ -349,7 +352,8 @@ export default function UploadSection() {
             <button
               type="button"
               onClick={() => router.push("/library")}
-              className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm font-medium text-[var(--foreground)]"
+              data-hoverable="true"
+              className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm font-medium text-[var(--foreground)] shadow-[var(--shadow-soft)]"
             >
               <Library className="h-4 w-4" />
               Open Library
@@ -357,7 +361,8 @@ export default function UploadSection() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              data-hoverable="true"
+              className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] shadow-[var(--shadow-soft)] hover:text-[var(--foreground)]"
             >
               <RefreshCw className="h-4 w-4" />
               {progressDetails.is_complete ? "Upload Another" : "Switch Video"}

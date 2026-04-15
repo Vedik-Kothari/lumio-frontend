@@ -7,15 +7,15 @@ export default function LibraryPage() {
     <AppShell
       currentPath="/library"
       eyebrow="Library"
-      title="Keep every indexed video within reach."
-      subtitle="Scan the library quickly, pick a single recording or the whole collection, and jump into analysis with the right context already selected."
+      title="A signal library for every indexed recording."
+      subtitle="Scan the collection, choose one video or a batch, and move into analysis with the right semantic context already loaded."
       hero={
         <div className="glass-card rounded-[30px] p-5 md:p-6">
           <div className="grid gap-4">
             {[
-              { icon: LibraryBig, title: "Library-scale view", body: "See the whole indexed collection with cleaner scanning and faster entry points." },
-              { icon: Layers3, title: "Context-aware", body: "Move from one video to all indexed videos with visible scope controls." },
-              { icon: BookOpenText, title: "Reusable knowledge", body: "Treat recordings as a searchable, explorable knowledge base instead of raw media files." },
+              { icon: LibraryBig, title: "Bento-style library view", body: "Treat every indexed recording like a structured asset, not a loose media file." },
+              { icon: Layers3, title: "Semantic scope control", body: "Switch between one video, selected batches, or the full indexed collection." },
+              { icon: BookOpenText, title: "Reusable video memory", body: "Carry knowledge forward from one recording into new questions and comparisons." },
             ].map((item) => {
               const Icon = item.icon;
               return (

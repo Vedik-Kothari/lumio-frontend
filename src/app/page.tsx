@@ -12,18 +12,18 @@ import AppShell from "@/components/AppShell";
 const featureCards = [
   {
     icon: BrainCircuit,
-    title: "Ingest once, query instantly",
-    body: "Upload a file or drop a YouTube link, then move into transcript-first search while multimodal indexing continues in the background.",
+    title: "Ingest once, open a live knowledge graph",
+    body: "Bring in a file or YouTube link and let Lumio turn speech, frames, and timestamps into a queryable intelligence surface.",
   },
   {
     icon: Search,
-    title: "Ask in natural language",
-    body: "Use grounded search, executive outputs, moment maps, and cross-video memory in one conversational AI workspace.",
+    title: "Interrogate it like a console",
+    body: "Search naturally, branch into workbench tools, and keep every answer anchored to evidence instead of guesswork.",
   },
   {
     icon: LibraryBig,
-    title: "Turn videos into a working library",
-    body: "Browse indexed videos, filter the collection, and jump directly into analysis with evidence and playback synced together.",
+    title: "Build a reusable signal library",
+    body: "Treat recordings as structured intelligence assets you can compare, filter, and reuse across new questions.",
   },
 ];
 
@@ -32,34 +32,34 @@ export default function Home() {
     <AppShell
       currentPath="/"
       eyebrow="Lumio"
-      title="Make sense of long videos without scrubbing through them twice."
-      subtitle="Bring in a recording, ask direct questions, and move from rough footage to something you can search, cite, and reuse."
+      title="A neural console for turning long video into evidence you can actually use."
+      subtitle="Ingest recordings, inspect grounded answers, and move from raw footage to structured knowledge without losing the moment that matters."
       hero={
         <div className="relative min-h-[340px] w-full max-w-[480px]">
-          <div className="hero-orb right-0 top-2 bg-[radial-gradient(circle,rgba(85,194,255,0.55)_0%,rgba(85,194,255,0.14)_45%,transparent_72%)]" />
-          <div className="hero-orb bottom-0 left-6 bg-[radial-gradient(circle,rgba(255,147,82,0.32)_0%,rgba(255,147,82,0.12)_45%,transparent_72%)]" />
+          <div className="hero-orb right-0 top-2 bg-[radial-gradient(circle,rgba(34,211,238,0.42)_0%,rgba(34,211,238,0.12)_45%,transparent_72%)]" />
+          <div className="hero-orb bottom-0 left-6 bg-[radial-gradient(circle,rgba(251,191,36,0.28)_0%,rgba(16,185,129,0.12)_52%,transparent_74%)]" />
           <div className="glass-card noise-surface animate-float absolute inset-x-0 top-8 rounded-[32px] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-[var(--foreground)]">AI output studio</div>
-                <div className="mt-2 text-sm text-[var(--muted-foreground)]">Moment map, evidence, and synced player</div>
+                <div className="font-mono text-[12px] uppercase tracking-[0.22em] text-[var(--muted-foreground)]">Neural workspace</div>
+                <div className="mt-2 text-sm text-[var(--muted-foreground)]">Moment map, semantic traces, and synced playback</div>
               </div>
-              <div className="rounded-full bg-[var(--surface-brand)] px-3 py-1 text-[12px] font-medium text-[var(--foreground)]">
-                Live
+              <div className="rounded-full border border-[var(--accent-soft)] bg-[rgba(16,185,129,0.12)] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--foreground)]">
+                System live
               </div>
             </div>
             <div className="mt-6 grid gap-4">
               <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-4">
-                <div className="text-[13px] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Using 3 indexed videos</div>
-                <div className="mt-3 text-lg font-medium text-[var(--foreground)]">Summarize the key financial shift and show me the exact moment it changed.</div>
+                <div className="font-mono text-[12px] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Context: 3 indexed recordings</div>
+                <div className="mt-3 text-lg font-medium text-[var(--foreground)]">Surface the financial inflection point and bind it to the exact timestamp where the narrative flips.</div>
               </div>
               <div className="rounded-[24px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] p-4">
-                <div className="flex items-center gap-2 text-[13px] text-[var(--muted-foreground)]">
+                <div className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
                   <PlayCircle className="h-4 w-4 text-[var(--primary)]" />
-                  Evidence-backed response
+                  Evidence trace
                 </div>
                 <div className="mt-3 text-sm leading-7 text-[var(--foreground)]/86">
-                  Margin compression begins after the pricing discussion and reverses at the updated guidance section.
+                  Margin compression begins after the pricing discussion, peaks through the midpoint, then reverses during updated guidance.
                 </div>
               </div>
             </div>
@@ -69,16 +69,16 @@ export default function Home() {
     >
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { value: "Transcript-first", label: "Search becomes useful before full visual enrichment completes" },
-          { value: "Evidence-linked", label: "Answers, frames, and playback stay connected" },
-          { value: "Cross-video", label: "Run the same question over one video or the whole library" },
-          { value: "AI-first", label: "Built around queries and outputs, not a dashboard grid" },
+          { value: "Transcript-first", label: "Search wakes up before the full multimodal pass finishes indexing." },
+          { value: "Evidence-linked", label: "Answers, frames, citations, and playback stay stitched together." },
+          { value: "Cross-video", label: "Run one prompt across a single recording, a batch, or the full library." },
+          { value: "Neural-console", label: "Designed around retrieval, evidence, and reuse instead of dashboard chrome." },
         ].map((stat) => (
           <div
             key={stat.value}
             className="glass-card interactive-card rounded-[28px] p-5"
           >
-            <div className="text-2xl font-semibold tracking-[-0.03em] text-[var(--foreground)]">{stat.value}</div>
+            <div className="font-mono text-[12px] uppercase tracking-[0.24em] text-[var(--muted-foreground)]">{stat.value}</div>
             <div className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{stat.label}</div>
           </div>
         ))}
@@ -89,13 +89,13 @@ export default function Home() {
           <div className="glass-card rounded-[32px] p-6 md:p-8">
             <div className="eyebrow">
               <span className="status-dot" />
-              How it works
+              System flow
             </div>
             <h2 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-[var(--foreground)]">
-              From raw video to something useful.
+              From ingestion to reusable intelligence.
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-8 text-[var(--muted-foreground)]">
-              Lumio is built for the moments after you hit play: finding the answer, checking the source, and turning that moment into something you can act on.
+              Lumio is built for the moment after play begins: isolate the signal, verify the source, and turn that moment into something you can share, cite, or act on.
             </p>
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -117,13 +117,13 @@ export default function Home() {
           <div className="glass-card rounded-[32px] p-6 md:p-8">
             <div className="eyebrow">
               <Sparkles className="h-4 w-4 text-[var(--primary)]" />
-              Start here
+              Launch points
             </div>
             <div className="mt-6 space-y-4">
               {[
-                { href: "/ingest", title: "Start an ingest job", body: "Drop in a local file or YouTube link with progressive indexing and live pipeline feedback." },
-                { href: "/workspace", title: "Open the AI workspace", body: "Chat with your video knowledge base, run workbench tools, and follow evidence into the player." },
-                { href: "/library", title: "Explore the library", body: "Filter indexed videos, inspect readiness, and branch into focused analysis with one click." },
+                { href: "/ingest", title: "Run the ingest pipeline", body: "Drop in a local file or YouTube link and watch the system progress from source to vectors." },
+                { href: "/workspace", title: "Open the neural workspace", body: "Query your video knowledge base, inspect evidence, and move directly into playback." },
+                { href: "/library", title: "Browse the signal library", body: "Filter indexed recordings, inspect status, and branch into focused analysis from one place." },
               ].map((item) => (
                 <Link
                   key={item.href}

@@ -8,15 +8,15 @@ export default function WorkspacePage() {
       currentPath="/workspace"
       eyebrow="Workspace"
       aiActive
-      title="Ask better questions. Get answers you can actually trace."
-      subtitle="Chat with a video, open the source behind the answer, and jump straight to the moment that matters."
+      title="Operate the video like a multimodal intelligence system."
+      subtitle="Query naturally, inspect the evidence trail, and jump straight to the visual or transcript moment that supports the answer."
       hero={
         <div className="glass-card rounded-[30px] p-5 md:p-6">
           <div className="grid gap-4">
             {[
-              { icon: MessageSquareText, title: "Conversation-first", body: "Follow-ups happen inline instead of inside a buried modal." },
-              { icon: ScanSearch, title: "Evidence-linked", body: "Every grounded answer can open sources, timestamps, and frame snapshots." },
-              { icon: PlayCircle, title: "Player-synced", body: "Click a citation and jump directly into the relevant moment." },
+              { icon: MessageSquareText, title: "Intelligence studio", body: "Follow-ups stay conversational while the system keeps retrieval, evidence, and context in sync." },
+              { icon: ScanSearch, title: "Evidence rail", body: "Every answer keeps its supporting sources, timestamps, and frame snapshots close at hand." },
+              { icon: PlayCircle, title: "Timeline-linked player", body: "Move from a citation to playback without breaking the flow of analysis." },
             ].map((item) => {
               const Icon = item.icon;
               return (

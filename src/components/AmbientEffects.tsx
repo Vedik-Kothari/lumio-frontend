@@ -37,6 +37,8 @@ export default function AmbientEffects({ aiActive = false }: { aiActive?: boolea
   const { x, y, isMoving } = useViewportCursor();
   const [isDesktop, setIsDesktop] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
+  const [isHoveringInteractive, setIsHoveringInteractive] = useState(false);
+  const [hoverTarget, setHoverTarget] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -58,16 +60,44 @@ export default function AmbientEffects({ aiActive = false }: { aiActive?: boolea
     };
   }, [isDesktop]);
 
+  useEffect(() => {
+    if (!isDesktop) return;
+
+    const interactiveSelector =
+      'button, a, input, textarea, select, [role="button"], [data-hoverable="true"]';
+
+    const handleMove = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      const interactive = target?.closest(interactiveSelector) as HTMLElement | null;
+      if (!interactive) {
+        setIsHoveringInteractive(false);
+        setHoverTarget(null);
+        return;
+      }
+
+      const rect = interactive.getBoundingClientRect();
+      setIsHoveringInteractive(true);
+      setHoverTarget({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      });
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, [isDesktop]);
+
   const orbScale = useTransform(() => {
     if (isPressed) return 0.9;
+    if (isHoveringInteractive) return 1.18;
     if (aiActive) return 1.22;
     if (isMoving) return 1.05;
     return 1;
   });
 
   const orbOpacity = useTransform(() => {
-    if (theme === "light") return aiActive ? 0.28 : 0.18;
-    return aiActive ? 0.42 : 0.28;
+    if (theme === "light") return isHoveringInteractive ? 0.32 : aiActive ? 0.28 : 0.18;
+    return isHoveringInteractive ? 0.48 : aiActive ? 0.42 : 0.28;
   });
 
   const nodes = useMemo(
@@ -81,6 +111,17 @@ export default function AmbientEffects({ aiActive = false }: { aiActive?: boolea
     []
   );
 
+  const auraTargetX = useMotionValue(0);
+  const auraTargetY = useMotionValue(0);
+  const auraX = useSpring(auraTargetX, { stiffness: 90, damping: 18, mass: 0.5 });
+  const auraY = useSpring(auraTargetY, { stiffness: 90, damping: 18, mass: 0.5 });
+
+  useEffect(() => {
+    const target = hoverTarget ?? null;
+    auraTargetX.set(target?.x ?? 0);
+    auraTargetY.set(target?.y ?? 0);
+  }, [auraTargetX, auraTargetY, hoverTarget]);
+
   if (!isDesktop) {
     return null;
   }
@@ -93,11 +134,12 @@ export default function AmbientEffects({ aiActive = false }: { aiActive?: boolea
         style={{
           background:
             theme === "dark"
-              ? "radial-gradient(circle at 15% 20%, rgba(56,189,248,0.09), transparent 30%), radial-gradient(circle at 78% 18%, rgba(249,115,22,0.08), transparent 24%), radial-gradient(circle at 50% 80%, rgba(56,189,248,0.06), transparent 28%)"
-              : "radial-gradient(circle at 15% 20%, rgba(59,130,246,0.1), transparent 28%), radial-gradient(circle at 78% 18%, rgba(14,165,233,0.07), transparent 24%), radial-gradient(circle at 50% 80%, rgba(148,163,184,0.08), transparent 26%)",
+              ? "radial-gradient(circle at 15% 20%, rgba(34,211,238,0.1), transparent 30%), radial-gradient(circle at 78% 18%, rgba(251,191,36,0.08), transparent 24%), radial-gradient(circle at 50% 80%, rgba(16,185,129,0.08), transparent 28%)"
+              : "radial-gradient(circle at 15% 20%, rgba(8,145,178,0.12), transparent 28%), radial-gradient(circle at 78% 18%, rgba(229,159,18,0.1), transparent 24%), radial-gradient(circle at 50% 80%, rgba(15,159,110,0.1), transparent 26%)",
         }}
         animate={{
           backgroundPosition: aiActive ? ["0% 0%", "3% 2%", "0% 0%"] : ["0% 0%", "2% 1%", "0% 0%"],
+          scale: aiActive ? [1, 1.025, 1] : [1, 1.012, 1],
         }}
         transition={{ duration: aiActive ? 7 : 11, repeat: Infinity, ease: "easeInOut" }}
       />
@@ -128,11 +170,30 @@ export default function AmbientEffects({ aiActive = false }: { aiActive?: boolea
           opacity: orbOpacity,
           background:
             theme === "dark"
-              ? "radial-gradient(circle, rgba(56,189,248,0.56) 0%, rgba(56,189,248,0.18) 28%, rgba(249,115,22,0.12) 52%, transparent 72%)"
-              : "radial-gradient(circle, rgba(59,130,246,0.26) 0%, rgba(59,130,246,0.14) 28%, rgba(148,163,184,0.1) 52%, transparent 72%)",
+              ? "radial-gradient(circle, rgba(34,211,238,0.52) 0%, rgba(34,211,238,0.16) 28%, rgba(251,191,36,0.1) 52%, transparent 72%)"
+              : "radial-gradient(circle, rgba(8,145,178,0.28) 0%, rgba(8,145,178,0.14) 28%, rgba(229,159,18,0.1) 52%, transparent 72%)",
         }}
         animate={aiActive ? { filter: ["blur(48px)", "blur(56px)", "blur(48px)"] } : undefined}
         transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <motion.div
+        aria-hidden
+        className="pointer-events-none fixed left-0 top-0 z-[59] hidden h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full lg:block"
+        style={{
+          x: auraX,
+          y: auraY,
+          opacity: isHoveringInteractive ? (theme === "dark" ? 0.18 : 0.14) : 0,
+          background:
+            theme === "dark"
+              ? "radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(34,211,238,0.12) 34%, rgba(16,185,129,0.08) 58%, transparent 78%)"
+              : "radial-gradient(circle, rgba(255,255,255,0.65) 0%, rgba(8,145,178,0.1) 38%, rgba(15,159,110,0.08) 60%, transparent 80%)",
+          filter: "blur(18px)",
+        }}
+        animate={{
+          scale: isHoveringInteractive ? [1, 1.08, 1] : 1,
+        }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
       />
     </>
   );

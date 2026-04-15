@@ -30,26 +30,28 @@ export default function VideoPlayer({ videoId, timestamp }: { videoId: string; t
   }, [timestamp, isVideoLoaded]);
 
   return (
-    <div className="glass-card relative flex aspect-video items-center justify-center overflow-hidden rounded-[28px]">
+    <div className="glass-card relative flex aspect-video items-center justify-center overflow-hidden rounded-[28px] shadow-[var(--shadow-strong)]">
       <div
         className="pointer-events-none absolute inset-0 rounded-[28px]"
         style={{
           background:
-            "linear-gradient(135deg, rgba(85,194,255,0.12) 0%, transparent 48%, rgba(255,147,82,0.1) 100%)",
+            "linear-gradient(135deg, rgba(34,211,238,0.14) 0%, rgba(251,191,36,0.08) 44%, rgba(16,185,129,0.12) 100%)",
         }}
       />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(34,211,238,0.12),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.82))]" />
 
       {!isVideoLoaded && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
           <Loader2 className="mb-3 animate-spin text-[var(--primary)]" size={28} />
-          <span className="text-xs font-mono text-[var(--muted-foreground)]">Loading video stream...</span>
+          <span className="text-xs font-mono uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Loading timeline stream</span>
         </div>
       )}
 
       <video
         ref={videoRef}
         key={videoId}
-        className="w-full h-full object-contain bg-black"
+        className="h-full w-full bg-black object-contain"
         controls
         playsInline
         onLoadedData={() => setIsVideoLoaded(true)}
