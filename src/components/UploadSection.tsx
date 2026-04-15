@@ -1,11 +1,21 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { UploadCloud, CheckCircle2, Loader2, Video, Link as LinkIcon, FileVideo, RefreshCw, Orbit, Search as SearchIcon, Library } from 'lucide-react';
+import { UploadCloud, CheckCircle2, Loader2, Video, Link as LinkIcon, FileVideo, RefreshCw, Orbit, Search as SearchIcon, Library, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "An error occurred";
+
+interface ApiError extends Error {
+  status?: number;
+}
+
+type FriendlyError = {
+  title: string;
+  description: string;
+  actionLabel?: string;
+};
 
 interface ProgressDetails {
   status: string;
@@ -17,6 +27,40 @@ interface ProgressDetails {
   warning?: string;
 }
 
+const toFriendlyError = (error: unknown, activeTab: "file" | "link"): FriendlyError => {
+  const fallback = {
+    title: "The pipeline hit a recoverable issue.",
+    description: getErrorMessage(error),
+  };
+
+  const message = getErrorMessage(error);
+  const lowered = message.toLowerCase();
+  const status = typeof error === "object" && error !== null && "status" in error
+    ? Number((error as ApiError).status)
+    : undefined;
+
+  if (
+    activeTab === "link" &&
+    (status === 422 || lowered.includes("bot-check") || lowered.includes("youtube blocked this download"))
+  ) {
+    return {
+      title: "This YouTube link needs a different retrieval path.",
+      description:
+        "Lumio will try transcript-first retrieval for supported YouTube videos. If this specific link still fails, the source likely has no accessible transcript and YouTube is blocking direct server-side video access.",
+    };
+  }
+
+  if (activeTab === "link" && (status === 429 || lowered.includes("rate-limited") || lowered.includes("too many requests"))) {
+    return {
+      title: "YouTube is rate-limiting this server right now.",
+      description:
+        "Retry in a bit. Lumio now prefers transcript-first retrieval for YouTube links, but this source is still being throttled upstream.",
+    };
+  }
+
+  return fallback;
+};
+
 export default function UploadSection() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"file" | "link">("file");
@@ -24,6 +68,7 @@ export default function UploadSection() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<"idle" | "uploading" | "processing" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [friendlyError, setFriendlyError] = useState<FriendlyError | null>(null);
   const [progressDetails, setProgressDetails] = useState<ProgressDetails>({ status: "", percent: 0 });
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const pollerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -72,6 +117,8 @@ export default function UploadSection() {
 
     setStatus("uploading");
     setProgressDetails({ status: "Uploading file...", percent: 0 });
+    setFriendlyError(null);
+    setErrorMsg("");
     const formData = new FormData();
     formData.append("file", file);
 
@@ -102,6 +149,7 @@ export default function UploadSection() {
     } catch (err: unknown) {
       stopPolling();
       setErrorMsg(getErrorMessage(err));
+      setFriendlyError(toFriendlyError(err, "file"));
       setStatus("error");
     }
   };
@@ -112,6 +160,8 @@ export default function UploadSection() {
 
     setStatus("uploading");
     setProgressDetails({ status: "Connecting to video...", percent: 0 });
+    setFriendlyError(null);
+    setErrorMsg("");
 
     const videoId = crypto.randomUUID();
     startPolling(videoId);
@@ -125,7 +175,9 @@ export default function UploadSection() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || res.statusText);
+        const apiError = new Error(err.detail || res.statusText) as ApiError;
+        apiError.status = res.status;
+        throw apiError;
       }
       const data = await res.json();
       setProgressDetails((current) => ({
@@ -141,6 +193,7 @@ export default function UploadSection() {
     } catch (err: unknown) {
       stopPolling();
       setErrorMsg(getErrorMessage(err));
+      setFriendlyError(toFriendlyError(err, "link"));
       setStatus("error");
     }
   };
@@ -153,6 +206,7 @@ export default function UploadSection() {
     setCurrentVideoId(null);
     stopPolling();
     setErrorMsg("");
+    setFriendlyError(null);
   };
 
   const isProcessing = status === "uploading" || status === "processing";
@@ -372,7 +426,39 @@ export default function UploadSection() {
       )}
 
       {status === "error" && (
-        <p className="text-red-400 text-xs mt-3 text-center font-mono">{errorMsg}</p>
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 rounded-[24px] border border-[rgba(248,113,113,0.22)] bg-[linear-gradient(135deg,rgba(127,29,29,0.34),rgba(30,41,59,0.4))] p-4"
+        >
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-[rgba(248,113,113,0.14)] text-red-300">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-[var(--foreground)]">
+                {friendlyError?.title || "The source could not be processed."}
+              </div>
+              <div className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">
+                {friendlyError?.description || errorMsg}
+              </div>
+              {!friendlyError && (
+                <div className="mt-2 break-words text-xs text-red-300/90 font-mono">{errorMsg}</div>
+              )}
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleReset}
+              data-hoverable="true"
+              className="inline-flex items-center justify-center gap-2 rounded-[18px] border border-[var(--panel-border)] bg-[var(--surface-elevated)] px-4 py-3 text-sm font-medium text-[var(--muted-foreground)] shadow-[var(--shadow-soft)] hover:text-[var(--foreground)]"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try another link
+            </button>
+          </div>
+        </motion.div>
       )}
     </motion.div>
   );
